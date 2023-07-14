@@ -1,5 +1,11 @@
 Data gathering / preprocessing notes:
 
+some recipe urls are mapped to more than one recipe IRIs in FoodKG
+number of distinct recipe IRIs: 1023055
+number of distinct recipe URLs:
+
+
+
 - [NOT USED] (usda.trig ! 456 MB) usda KG can be found here:
 which we get from here (https://drive.google.com/file/d/1hkitCcxnM_7R6OYuvC5zakWojlN2Xuog/view_)
 which we originally get from here (https://foodkg.github.io/foodkg.html)
