@@ -1,0 +1,85 @@
+Data gathering / preprocessing notes:
+
+- [NOT USED] (usda.trig ! 456 MB) usda KG can be found here:
+which we get from here (https://drive.google.com/file/d/1hkitCcxnM_7R6OYuvC5zakWojlN2Xuog/view_)
+which we originally get from here (https://foodkg.github.io/foodkg.html)
+you download a rdf file, but it is actually in trig (nanopublication format)
+
+Details:
+
+# def load_usda_nutritional_data(usda_data_path="Dataset/usda.trig") -> None:
+#     usda_data_dataset = Dataset()
+#     usda_data_dataset.parse(usda_data_path, format="trig")
+#
+#     nanopublication_namespace = Namespace("http://www.nanopub.org/nschema#")
+#     usda_kb_namespace = Namespace("http://idea.rpi.edu/heals/kb/usda#")
+#
+#     nanopublication_iri_set: set[Node] = set()
+#
+#     # each nanopublication refers to one assertion node, that contains the entry of all nutritional info of one ingredient
+#     for nanopublication_iri, _, _, _ in usda_data_dataset.quads((None, RDF.type, nanopublication_namespace.term("Nanopublication"), None)):
+#         # get the assertion node that refers to the same ingredient
+#         print("Nanopublication IRI:", nanopublication_iri)
+#         for _, _, nano_assertion_iri, _ in usda_data_dataset.quads((nanopublication_iri, nanopublication_namespace.term("hasAssertion"), nanopublication_namespace.term("Nanopublication"), None)):
+#             print("Nano Assertion IRI:", nano_assertion_iri)
+#             # get all nutritional info about this ingredient
+#             for nutr_node_ID, _, _, _ in usda_data_dataset.quads((None, RDF.type, usda_kb_namespace.term("id"), nano_assertion_iri)):
+#                 print("Nutritional Info entry node ID:", nutr_node_ID)
+#                 exit()
+#                 # for
+
+        # nano_assertion_iri
+        # nanopublication_namespace
+
+        # nanopublication_iri_set
+
+        # foodkg_to_usda_equivalent_classes_graph.parse(foodkg_to_usda_equivalent_classes_filename)
+
+
+# get all nanopublications
+# ?s rdf:type	np:Nanopublication .
+# example:
+# usda-kb:nanoPub-cee29d3c76225075096dc60b2ded86fb
+#
+# get their assertion node:
+# ?s np:hasAssertion ?a.
+#
+# example:
+# usda-kb:nanoPub-cee29d3c76225075096dc60b2ded86fb
+# 	np:hasAssertion
+# 	usda-kb:assertion-
+# 	(usda-kb:head-cee29d3c76225075096dc60b2ded86fb)
+#
+# get all triples with ?a as context
+# graph ?a {?s2 ?p ?o}
+# ?node_id rdf:type usda-kb:id ?a
+
+# get the USDA Nutrition ID (column number?) of the ingredient
+# ?node_id hasco:hasPosition ?usda_id
+# usda-kb:GmWt_2 	hasco:hasPosition "51"
+
+#
+# get the ingredient id:
+# ?node_id sio:hasValue ?usda_ingredient_id ?a
+#
+# get all nutritional information from the same ?a assertion context graph:
+# example:
+# 139	usda-kb:food_folate-c1d13e0bfa19e67faf1c79115e171f06 	sio:hasUnit 		uo:0000023 				usda-kb:assertion-cee29d3c76225075096dc60b2ded86fb
+# 140	usda-kb:food_folate-c1d13e0bfa19e67faf1c79115e171f06 	sio:hasValue 		"3"^^xsd:integer 		usda-kb:assertion-cee29d3c76225075096dc60b2ded86fb
+# 141	usda-kb:food_folate-c1d13e0bfa19e67faf1c79115e171f06 	sio:isAttributeOf 	usda-kb:id-c1d13e0bfa19e67faf1c79115e171f06 	usda-kb:assertion-cee29d3c76225075096dc60b2ded86fb
+# 142	usda-kb:food_folate-c1d13e0bfa19e67faf1c79115e171f06 	rdf:type 			usda-kb:food_folate 	usda-kb:assertion-cee29d3c76225075096dc60b2ded86fb
+# 143	usda-kb:food_folate-c1d13e0bfa19e67faf1c79115e171f06 	rdf:type 			sio:Attribute 			usda-kb:assertion-cee29d3c76225075096dc60b2ded86fb
+# 144	usda-kb:food_folate-c1d13e0bfa19e67faf1c79115e171f06 	rdfs:label 			"Food Folate (micro_g)" usda-kb:assertion-cee29d3c76225075096dc60b2ded86fb
+#
+#     i = 0
+#     for s, p, o, c in usda_data_dataset:
+#         print(s, p, o, c)
+#         i += 1
+#         if i > 1000:
+#             break
+
+- Nutritional info from USDA are extracted from the csv file that can be found here:
+https://github.com/foodkg/foodkg.github.io/tree/master/sdd
+(usda.csv) file.
+1st column is the ID, which can then be used to get the "USDA IRI", that is used in the foodkg - usda mappings:
+as such: http://idea.rpi.edu/heals/kb/usda#USDA_ID
