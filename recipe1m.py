@@ -99,7 +99,7 @@ def needs_update_explore_subs1m_recipe_ingredients(
     print("Number of ingredients not matched at all:", len(ingredient_not_found_at_all))
 
 
-def get_statistics_of_substitution_data_and_foodKG_mappings(
+def depricated_get_statistics_of_substitution_data_and_foodKG_mappings(foodkg_graphdb_interface:FoodKGGraphDBInterface,
         subs1m_pickle_dir: str = "/Users/kondy/Desktop/PhD/Recipes/datasets/FoodKG/Recipe1M Requirements/recipe1m/preprocessed_flavorgraph_substitutions_fixed_3_no_flavorgraph",
         split: str = "val", recipe1m_URL_to_ID_dict_pickle_path: str = "Dataset/recipe1m_ID_to_URL_dict.pickle",
         subs1m_comment_subs_dir="/Users/kondy/PycharmProjects/gismo/gismo/checkpoints") -> None:
@@ -150,12 +150,12 @@ def get_statistics_of_substitution_data_and_foodKG_mappings(
         # remaining_unmatched_recipe_ingredients_foodKG_IRIs_set:set[str] = set(get_FoodKG_ingredient_IRIs_of_recipe_given_url(recipe_url=recipe_url))
 
         # attempt to map ingredients involved in substitution to foodkg
-        original_ingredient_IRI = match_ingredient_from_1Msubs_to_foodKG_by_IRI_or_name(
+        original_ingredient_IRI = foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name(
             original_ingredient)
         if original_ingredient_IRI is not None:
             total_original_sub_ingredient_mapped += 1
 
-        new_ingredient_IRI = match_ingredient_from_1Msubs_to_foodKG_by_IRI_or_name(
+        new_ingredient_IRI = foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name(
             new_ingredient)
         if new_ingredient_IRI is not None:
             total_new_sub_ingredient_mapped += 1
@@ -191,7 +191,7 @@ def get_statistics_of_substitution_data_and_foodKG_mappings(
                     continue
                 # if we have not come across this ingredient before
                 else:
-                    ingredient_IRI = match_ingredient_from_1Msubs_to_foodKG_by_IRI_or_name(ingredient_name)
+                    ingredient_IRI = foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name(ingredient_name)
                     if ingredient_IRI is None:
                         ingredient_synonym_not_found.add(ingredient_name)
                     else:
@@ -258,18 +258,26 @@ def get_statistics_of_substitution_data_and_foodKG_mappings(
     # Average ingredients mapped per recipe ratio: 0.9526823613737557
 
 
-def create_graph_with_recipes_and_substitutions_in_FoodKG(
-        subs1m_pickle_dir: str = "/Users/kondy/Desktop/PhD/Recipes/datasets/FoodKG/Recipe1M Requirements/recipe1m/preprocessed_flavorgraph_substitutions_fixed_3_no_flavorgraph",
+def create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interface:FoodKGGraphDBInterface,
+        # subs1m_pickle_dir: str = "/Users/kondy/Desktop/PhD/Recipes/datasets/FoodKG/Recipe1M Requirements/recipe1m/preprocessed_flavorgraph_substitutions_fixed_3_no_flavorgraph",
         split: str = "val", recipe1m_URL_to_ID_dict_pickle_path: str = "Dataset/recipe1m_ID_to_URL_dict.pickle",
         subs1m_comment_subs_dir="/Users/kondy/PycharmProjects/gismo/gismo/checkpoints") -> None:
 
 
     output_graph_filename = 'Dataset/substitutions_graph_' + split + '.ttl'
+    log_file_path: str = "Dataset/log_of_creating_subs_graph_foodkg_" + split + '.log'
+
+    not_found_ingredients:set[str] = set()
+
+
+    log_file = open(log_file_path, 'w')
+
+    log_file.write("original_ing_not_found" + "\t" + "recipe_url" + "\n")
 
     # read subs1m preprocessed files of recipes
-    subs1m_filepath = os.path.join(subs1m_pickle_dir, "final_recipe1m_" + split + ".pkl")
-    with open(subs1m_filepath, 'rb') as file:
-        subs1m_recipes = pickle.load(file)
+    # subs1m_filepath = os.path.join(subs1m_pickle_dir, "final_recipe1m_" + split + ".pkl")
+    # with open(subs1m_filepath, 'rb') as file:
+    #     subs1m_recipes = pickle.load(file)
 
     # read subs1m preprocessed files of substitutions
     subs1m_comment_subs = os.path.join(subs1m_comment_subs_dir, split + "_comments_subs.pkl")
@@ -306,61 +314,71 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(
         substitution = substitution_entry["subs"]
         original_ingredient, new_ingredient = substitution
 
-        # attempt to identify new ingredient in FoodKG
-        new_ingredient_IRI = match_ingredient_from_1Msubs_to_foodKG_by_IRI_or_name(
-            new_ingredient)
+        if new_ingredient not in not_found_ingredients:
+            # attempt to identify new ingredient in FoodKG
+            new_ingredient_short_IRI = foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name(new_ingredient)
 
-        if new_ingredient_IRI is None:
+        if new_ingredient in not_found_ingredients or new_ingredient_short_IRI is None:
             new_ingredient_not_identified_in_foodKG_counter += 1
+            log_file.write("New:" + "\t" + new_ingredient + "\t" + recipe_url + "\n")
+            not_found_ingredients.add(new_ingredient)
             continue
 
-        # let's identify the original ingredient
-        original_ingredient_iri: Optional[str] = None
-        matched_recipe_uriref: Optional[URIRef] = None
-        recipe_ingredients_foodKG_IRIs: Optional[List[str]] = None
-        for recipe_iri in recipe_IRIs:
+        if original_ingredient not in not_found_ingredients:
 
-            recipe_ingredients_foodKG_IRIs: list[str] = get_FoodKG_ingredient_IRIs_of_given_recipe_IRI(recipe_iri=recipe_iri)
+            # let's identify the original ingredient
+            original_ingredient_short_iri: Optional[str] = None
+            matched_recipe_uriref: Optional[URIRef] = None
+            recipe_ingredients_foodKG_short_IRIs: Optional[List[str]] = None
+            for recipe_iri in recipe_IRIs:
 
-            ingredients_list_with_synonyms: list[list[str]] = substitution_entry["ingredients"]
+                recipe_ingredients_foodKG_short_IRIs: list[str] = foodkg_graphdb_interface.get_FoodKG_ingredient_short_IRIs_of_given_recipe_IRI(recipe_iri=recipe_iri)
 
-            # first let's try to directly match the original ingredient with its IRI in FoodKG
-            # attempt to identify new ingredient in FoodKG
-            original_ingredient_iri = match_ingredient_from_1Msubs_to_foodKG_by_IRI_or_name(
-                original_ingredient)
+                ingredients_list_with_synonyms: list[list[str]] = substitution_entry["ingredients"]
 
-            # if we didn't find the original ingredient in FoodKG,
-            # or if we did but it is not among the ingredients of the recipe
-            if original_ingredient_iri is None or original_ingredient_iri not in recipe_ingredients_foodKG_IRIs:
-                # we make sure it doesn't have a wrong IRI at the moment, and try to identify the correct one
-                original_ingredient_iri = None
-                # We find its synonyms from the Subs1M dataset
-                # and try to match any of these with the ingredients of the recipe
-                # So, for all the lists of ingredients with their "synonyms"
-                for ingredient_with_synonyms in ingredients_list_with_synonyms:
-                    # if the original ingredient was found in this list of synonyms
-                    if original_ingredient in ingredient_with_synonyms:
-                        # see which of the synonyms, matches one of the ingredient IRIs registered in FoodKG for this recipe
-                        for ingredient_name in ingredient_with_synonyms:
-                            # attempt to retrieve the FoodKG IRI of this ingredient form FoodKG
-                            ingredient_IRI = match_ingredient_from_1Msubs_to_foodKG_by_IRI_or_name(ingredient_name)
-                            if ingredient_IRI in recipe_ingredients_foodKG_IRIs:
-                                original_ingredient_iri = ingredient_IRI
-                    else:
-                        continue
-            #  if we managed to identify the original ingredient in any of the matched recipe IRIs from FoodKG, we continue
-            if original_ingredient_iri is not None:
-                # we also store the FoodKG IRI of the recipe that in which the original ingredient was identified
-                matched_recipe_uriref = URIRef(recipe_iri)
-                break
+                # first let's try to directly match the original ingredient with its IRI in FoodKG
+                # attempt to identify new ingredient in FoodKG
+                original_ingredient_short_iri = foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name(
+                    original_ingredient)
 
-        if original_ingredient_iri is None:
+                # if we didn't find the original ingredient in FoodKG,
+                # or if we did, but it is not among the ingredients of the recipe
+                if original_ingredient_short_iri is None or original_ingredient_short_iri not in recipe_ingredients_foodKG_short_IRIs:
+                    # we make sure it doesn't have a wrong IRI at the moment, and try to identify the correct one
+                    original_ingredient_short_iri = None
+                    # We find its synonyms from the Subs1M dataset
+                    # and try to match any of these with the ingredients of the recipe
+                    # So, for all the lists of ingredients with their "synonyms"
+                    for ingredient_with_synonyms in ingredients_list_with_synonyms:
+                        # if the original ingredient was found in this list of synonyms
+                        if original_ingredient in ingredient_with_synonyms:
+                            # see which of the synonyms, matches one of the ingredient IRIs registered in FoodKG for this recipe
+                            for ingredient_synonym_name in ingredient_with_synonyms:
+                                # attempt to retrieve the FoodKG IRI of this ingredient form FoodKG
+                                ingredient_short_IRI = foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name(ingredient_synonym_name)
+                                if ingredient_short_IRI in recipe_ingredients_foodKG_short_IRIs:
+                                    original_ingredient_short_iri = ingredient_short_IRI
+                                    break
+                        else:
+                            continue
+                        # if we have identified the original ingredient's IRI
+                        if original_ingredient_short_iri is not None:
+                            break
+                #  if we managed to identify the original ingredient in any of the matched recipe IRIs from FoodKG, we continue
+                if original_ingredient_short_iri is not None:
+                    # we also store the FoodKG IRI of the recipe that in which the original ingredient was identified
+                    matched_recipe_uriref = URIRef(recipe_iri)
+                    break
+
+        if original_ingredient in not_found_ingredients or original_ingredient_short_iri is None:
             original_ingredient_not_identified_in_foodKG_counter += 1
-            print("Original Ingredient not identified:", original_ingredient,  "recipe URL:", recipe_url)
+            log_file.write("Old:" + "\t" + original_ingredient + "\t" + recipe_url + "\n")
+            not_found_ingredients.add(original_ingredient)
+            # print("Original Ingredient not identified:", original_ingredient,  "recipe URL:", recipe_url)
             continue
 
         # # the original ingredient should always be identified
-        # assert original_ingredient_iri is not None
+        # assert original_ingredient_short_iri is not None
 
         #  if both ingredients have been identified in FoodKG, then we can create an entry for this substitution.
 
@@ -368,7 +386,7 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(
         # we need to also register the recipe and the ingredients
         if registered_substitutions_per_recipe_id_counter[recipe_id] == 0:
             # add all used ingredients to the graph
-            for ingredient_iri in recipe_ingredients_foodKG_IRIs:
+            for ingredient_iri in recipe_ingredients_foodKG_short_IRIs:
                 substitutions_foodKG_graph.add((matched_recipe_uriref, uses_ingredient_predicate, URIRef(ingredient_iri)))
 
         # create a new node for this specific substitution for this specific recipe
@@ -378,20 +396,45 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(
         # register the directed substitution node for this recipe (new node per substitution suggestion)
         substitutions_foodKG_graph.add((matched_recipe_uriref, has_suggested_substitution_predicate, substitution_node))
         # register the ingredients involved in this substitution
+        original_ingredient_iri = foodkg_graphdb_interface.get_full_ingredient_iri_given_short_iri(original_ingredient_short_iri)
         substitutions_foodKG_graph.add((substitution_node, original_ingredient_predicate, URIRef(original_ingredient_iri)))
-        substitutions_foodKG_graph.add((substitution_node, new_ingredient_predicate, URIRef(new_ingredient_IRI)))
+        new_ingredient_iri = foodkg_graphdb_interface.get_full_ingredient_iri_given_short_iri(new_ingredient_short_IRI)
+        substitutions_foodKG_graph.add((substitution_node, new_ingredient_predicate, URIRef(new_ingredient_iri)))
         # increase the counter of substitutions registered successfully for this recipe
         registered_substitutions_per_recipe_id_counter[recipe_id] += 1
+        identified_both_ingredients_counter += 1
 
     print(f"Total number of substitutions in split {split}, : {len(subs1m_comment_subs_pickle)}")
+    log_file.write(f"Total number of substitutions in split {split}, : {len(subs1m_comment_subs_pickle)}\m")
     print("Times identified both ingredients of the suggested substitution:", identified_both_ingredients_counter)
+    log_file.write("Times identified both ingredients of the suggested substitution: " + str(identified_both_ingredients_counter) + "\n")
     print("Times original ingredient not found:", original_ingredient_not_identified_in_foodKG_counter)
+    log_file.write("Times original ingredient not found: " + str(original_ingredient_not_identified_in_foodKG_counter) + "\n")
     print("Times new ingredient not found:", new_ingredient_not_identified_in_foodKG_counter)
+    log_file.write("Times new ingredient not found: " + str(new_ingredient_not_identified_in_foodKG_counter) + "\n")
+    print("Total ingredients not found:", len(not_found_ingredients))
+    log_file.write("Total ingredients not found: "  + str(len(not_found_ingredients)) + "\n")
     print("Serializing produced substitutions graph at:", output_graph_filename)
+    log_file.write("Serializing produced substitutions graph at: " + str(output_graph_filename) + "\n")
+    log_file.close()
+
+    # 100%|██████████| 49044/49044 [3:28:59<00:00,  3.91it/s]
+    # Total number of substitutions in split train, : 49044
+    # Times identified both ingredients of the suggested substitution: 38142
+    # Times original ingredient not found: 3666
+    # Times new ingredient not found: 7236
+    # Total ingredients not found: 849
+    # Serializing produced substitutions graph at: Dataset/substitutions_graph_train.ttl
+    
 
     # serialize the constructed graph to a file
     substitutions_foodKG_graph.serialize(destination=output_graph_filename, format='turtle')
 
 # explore_subs1m_recipe_ingredients()
 # get_statistics_of_substitution_data_and_foodKG_mappings()
-create_graph_with_recipes_and_substitutions_in_FoodKG()
+
+foodkg_graphdb_interface = FoodKGGraphDBInterface(load_ingredient_indexes_from_files=True)
+
+# print(foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name("potato"))
+
+create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interface, split="train")
