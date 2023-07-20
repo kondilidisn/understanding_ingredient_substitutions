@@ -292,14 +292,15 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interfa
     substitutions_namespace = Namespace("http://lr.cs.vu.nl/ingredient_substitutions#")
     uses_ingredient_predicate = substitutions_namespace.term("uses_ingredient")
     has_suggested_substitution_predicate = substitutions_namespace.term("has_suggested_substitution")
-    original_ingredient_predicate = substitutions_namespace.term("original_ingredient")
-    new_ingredient_predicate = substitutions_namespace.term("new_ingredient")
+    original_ingredient_predicate = substitutions_namespace.term("ingredient_b_iri")
+    new_ingredient_predicate = substitutions_namespace.term("ingredient_a_iri")
 
     registered_substitutions_per_recipe_id_counter = defaultdict(int)
 
     new_ingredient_not_identified_in_foodKG_counter = 0
     original_ingredient_not_identified_in_foodKG_counter = 0
     identified_both_ingredients_counter = 0
+    original_ingredient_matched_with_foodkg_iri_but_not_with_the_recipe_ingredients_counter = 0
 
 
     for substitution_entry in tqdm(subs1m_comment_subs_pickle):
@@ -341,6 +342,13 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interfa
                 original_ingredient_short_iri = foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name(
                     original_ingredient)
 
+
+                # if we have mapped the ingredient to some ingredient in FoodKG but not with any ingredient in the recipe ... WIP
+                # if original_ingredient_short_iri is not None and original_ingredient_short_iri not in recipe_ingredients_foodKG_short_IRIs:
+                # original_ingredient_matched_with_foodkg_iri_but_not_with_the_recipe_ingredients_counter += 1
+
+
+
                 # if we didn't find the original ingredient in FoodKG,
                 # or if we did, but it is not among the ingredients of the recipe
                 if original_ingredient_short_iri is None or original_ingredient_short_iri not in recipe_ingredients_foodKG_short_IRIs:
@@ -374,7 +382,7 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interfa
             original_ingredient_not_identified_in_foodKG_counter += 1
             log_file.write("Old:" + "\t" + original_ingredient + "\t" + recipe_url + "\n")
             not_found_ingredients.add(original_ingredient)
-            # print("Original Ingredient not identified:", original_ingredient,  "recipe URL:", recipe_url)
+            # print("Original Ingredient not identified:", ingredient_b_iri,  "recipe URL:", recipe_url)
             continue
 
         # # the original ingredient should always be identified
@@ -386,7 +394,8 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interfa
         # we need to also register the recipe and the ingredients
         if registered_substitutions_per_recipe_id_counter[recipe_id] == 0:
             # add all used ingredients to the graph
-            for ingredient_iri in recipe_ingredients_foodKG_short_IRIs:
+            for ingredient__short_iri in recipe_ingredients_foodKG_short_IRIs:
+                ingredient_iri = URIRef(foodkg_graphdb_interface.get_foodk_ingredient_iri_prefix() + ingredient__short_iri)
                 substitutions_foodKG_graph.add((matched_recipe_uriref, uses_ingredient_predicate, URIRef(ingredient_iri)))
 
         # create a new node for this specific substitution for this specific recipe
@@ -425,6 +434,22 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interfa
     # Times new ingredient not found: 7236
     # Total ingredients not found: 849
     # Serializing produced substitutions graph at: Dataset/substitutions_graph_train.ttl
+
+    # 100%|██████████| 10729/10729 [27:22<00:00,  6.53it/s]
+    # Total number of substitutions in split val, : 10729
+    # Times identified both ingredients of the suggested substitution: 8451
+    # Times original ingredient not found: 674
+    # Times new ingredient not found: 1604
+    # Total ingredients not found: 427
+    # Serializing produced substitutions graph at: Dataset/substitutions_graph_val.ttl
+
+    # 100%|██████████| 10747/10747 [37:35<00:00,  4.77it/s]
+    # Total number of substitutions in split test, : 10747
+    # Times identified both ingredients of the suggested substitution: 8582
+    # Times original ingredient not found: 625
+    # Times new ingredient not found: 1540
+    # Total ingredients not found: 422
+    # Serializing produced substitutions graph at: Dataset/substitutions_graph_test.ttl
     
 
     # serialize the constructed graph to a file
@@ -438,3 +463,5 @@ foodkg_graphdb_interface = FoodKGGraphDBInterface(load_ingredient_indexes_from_f
 # print(foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name("potato"))
 
 create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interface, split="train")
+
+# foodkg_graphdb_interface.write_class_memberships_of_ingredients_to_file_with_their_frequencies()
