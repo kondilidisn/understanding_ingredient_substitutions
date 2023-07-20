@@ -1,45 +1,107 @@
 import argparse
 import os
+import shutil
+
 from experiments import *
+from utils import *
 from experiment_utils import *
 from Agent import Agent
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--exp_dir', type=str, default="experiments")
+    parser.add_argument('--exp_dir', type=str, default="experiments")
+    parser.add_argument('--exp_dir_addition', type=str, default="")
+    parser.add_argument("--del_existing_exp_dir", action="store_true")
 
     # Experiment parameters
     # parser.add_argument("--repetitions", default=10, type=int)
-    parser.add_argument("--max_steps", default=50000, type=int)
+    parser.add_argument("--max_steps", default=38142, type=int) # one epoch is currently 38142 training samples
     parser.add_argument("--eval_every", default=1000, type=int)
+    parser.add_argument("--run_complete_epoch", action="store_true",
+                    help="train for a complete epoch & --eval_every 5000")
+
+    parser.add_argument("--ing2ing", default=1, type=int, help="ingredient_to_ingredient_substitution_counter")
+    parser.add_argument("--ingP2ingP", default=0, type=int, help="ing_prop_to_ing_prop_score_multiplier")
+    parser.add_argument("--recP2ingP", default=0, type=int, help="recipe_prop_to_ing_prop_score_multiplier")
+    parser.add_argument("--unsRecP", default=0, type=int, help="recipe_property_similarity_score_multiplier")
+    parser.add_argument("--unsIngP", default=1, type=int, help="original_ingredient_property_similarity_score_multiplier")
+
 
     # Dataset Parameters
-    # parser.add_argument('--dataset_dir', type=str, default="Dataset")
-
-    # parser.add_argument('--data_directory', type=str, default="reasoned_ontologies")
-    # parser.add_argument('--reference_alignments_dir', type=str, default="reference_alignments_owl")
-    # parser.add_argument('--instance_alignments_dir', type=str, default="produced_instance_alignments")
-    # parser.add_argument('--common_instances', type=str, default="simple", help='{"simple", "extended"}')
-
-    # Agent policies
-    # parser.add_argument('--teacher_policy', type=str, default="property-based", help='{"random", "property-based"}')
-    # parser.add_argument('--student_policy', type=str, default="logic-based", help='{"logic-based", "frequency-based"}')
-
+    parser.add_argument('--dataset_dir', type=str, default="Dataset")
+    parser.add_argument('--ing_prop_from_ont_filename_starts_with', type=str, default="ingredient_properties_from_ontology_")
+    parser.add_argument('--ing_properties_sources_ont', '--list', nargs='+', help='<Required> Set flag', default=["obo"])
+    # python main.py -ing_properties_sources obo usda flavor
     args = parser.parse_args()
+
+    ingredient_property_knowledge_sources_to_namespace_dict: dict[str, str] = dict()
+    for ontology_prefix in args.ing_properties_sources_ont:
+        ingredient_property_knowledge_sources_to_namespace_dict["obo"] = ingredient_prefix_to_namespace(ontology_prefix)
+
+
+    # print("_".join(args.ing_properties_sources_ont))
+    # exit()
 
     # check dataset path exists
     # if not os.path.exists(args.dataset_dir):
     #     raise ValueError(f"Dataset path '{args.dataset_dir}' could not be found!")
 
-    agent = Agent()
+    agent = Agent(ing_to_ing_score_multiplier=args.ing2ing,
+                  ing_prop_to_ing_prop_score_multiplier=args.ingP2ingP,
+                  recipe_prop_to_ing_prop_score_multiplier=args.recP2ingP,
+                  recipe_property_similarity_score_multiplier=args.unsRecP,
+                  original_ingredient_property_similarity_score_multiplier=args.unsIngP,
+                  ingredient_property_knowledge_sources_to_namespace_dict=ingredient_property_knowledge_sources_to_namespace_dict,
+                  ingredient_knowledge_source_per_ontology_filename_prefix=os.path.join(args.dataset_dir, args.ing_prop_from_ont_filename_starts_with))
 
-    # train_substitutions_graph = Graph()
-    # train_substitutions_graph.parse("Dataset/substitutions_graph_train.ttl")
-    # print("Training data loaded, size:", len(train_substitutions_graph))
+    experiment_directory: str = ""
+
+    experiment_directory += agent.get_agent_policy_str_description()
+    experiment_directory += "__prop_sources_" + "_".join(args.ing_properties_sources_ont)
+
+    experiment_directory = os.path.join(args.exp_dir, experiment_directory)
+
+    if args.run_complete_epoch:
+        experiment_directory += "__complete_epoch"
+
+    if args.exp_dir_addition != "":
+        experiment_directory += "__" + args.exp_dir_addition
+
+    args.del_existing_exp_dir = True
+
+    if os.path.exists(experiment_directory):
+        if args.del_existing_exp_dir:
+            print(f"Directory {experiment_directory} already existed, but was deleted.")
+            shutil.rmtree(experiment_directory)
+        else:
+            raise ValueError("Experiment directory already exists!")
+
+    os.mkdir(experiment_directory)
+
+
+    log_filename = os.path.join(experiment_directory, "experiment.log")
+
+    print("Running experiment to be saved in:\n" + experiment_directory)
+
+    print("Loading training and validation splits")
+
+    train_substitutions_graph = Graph()
+    train_substitutions_graph.parse("Dataset/substitutions_graph_train.ttl")
+    num_of_training_samples: int = get_number_of_substitution_samples_in_graph(train_substitutions_graph)
+    print("Training data loaded, containing ingredient substitutions:", num_of_training_samples)
     val_substitutions_graph = Graph()
     val_substitutions_graph.parse("Dataset/substitutions_graph_val.ttl")
-    print("Validation data loaded, size:", len(val_substitutions_graph))
-    test_substitutions_graph = Graph()
-    test_substitutions_graph.parse("Dataset/substitutions_graph_test.ttl")
-    print("Test data loaded, size:", len(test_substitutions_graph))
-    train_agent(agent, test_substitutions_graph, test_substitutions_graph, eval_every=args.eval_every, max_steps=args.max_steps)
+    print("Validation data loaded, containing ingredient substitutions:", get_number_of_substitution_samples_in_graph(val_substitutions_graph))
+
+    if args.run_complete_epoch:
+        args.max_steps = num_of_training_samples
+
+
+    # test_substitutions_graph = Graph()
+    # test_substitutions_graph.parse("Dataset/substitutions_graph_test.ttl")
+    # print("Test data loaded, containing ingredient substitutions:", get_number_of_substitution_samples_in_graph(test_substitutions_graph))
+
+
+    train_agent(agent, train_substitutions_graph, val_substitutions_graph,
+                eval_every=args.eval_every, max_steps=args.max_steps,
+                one_epoch=args.run_complete_epoch, log_filename=log_filename)

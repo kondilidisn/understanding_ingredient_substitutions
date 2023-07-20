@@ -6,7 +6,13 @@ from collections import defaultdict
 
 class Agent:
     def __init__(self, ingredient_property_knowledge_sources_to_namespace_dict: Optional[dict[str, str]] = None,
-                 ingredient_knowledge_source_per_ontology_filename_prefix: str = "Dataset/ingredient_properties_from_ontology_"):
+                 ingredient_knowledge_source_per_ontology_filename_prefix: str = "Dataset/ingredient_properties_from_ontology_",
+                ing_prop_to_ing_prop_score_multiplier: int=0,
+                recipe_prop_to_ing_prop_score_multiplier: int=0,
+                ing_to_ing_score_multiplier: int=1,
+                recipe_property_similarity_score_multiplier: int=0,
+                original_ingredient_property_similarity_score_multiplier: int=0
+                 ):
 
         if ingredient_property_knowledge_sources_to_namespace_dict is None:
             # ingredient_property_knowledge_sources_to_namespace_dict: dict[str:str] = {"obo": "http://purl.obolibrary.org/obo/", "b_node": "_:"}
@@ -28,20 +34,35 @@ class Agent:
         # learning ingredient substitution scores based on learnt property matching scores
         # property to property
         self.original_ingredient_to_new_ingredient_matching_property_counter = defaultdict(lambda: defaultdict(int))
-        self.ing_prop_to_ing_prop_score_multiplier:float = 0
+        self.ing_prop_to_ing_prop_score_multiplier: int = ing_prop_to_ing_prop_score_multiplier
         # property to property
         self.recipe_to_new_ingredient_matching_property_counter = defaultdict(lambda: defaultdict(int))
-        self.recipe_prop_to_ing_prop_score_multiplier:float = 0
+        self.recipe_prop_to_ing_prop_score_multiplier: int = recipe_prop_to_ing_prop_score_multiplier
 
         # we also have a counter that keeps track of each directed ingredient substitution, in a directional manner
         # ingredient to ingredient
         self.ingredient_to_ingredient_substitution_counter = defaultdict(lambda: defaultdict(int))
-        self.ing_to_ing_score_multiplier: float = 1
+        self.ing_to_ing_score_multiplier: int = ing_to_ing_score_multiplier
 
         # unsupervised ingredient substitution multipliers
-        self.recipe_property_similarity_score_multiplier: float = 0
-        self.original_ingredient_property_similarity_score_multiplier: float = 0
+        self.recipe_property_similarity_score_multiplier: int = recipe_property_similarity_score_multiplier
+        self.original_ingredient_property_similarity_score_multiplier: int = original_ingredient_property_similarity_score_multiplier
 
+    def get_agent_policy_str_description(self) -> str:
+        policy_descriptions: list[str] = []
+
+        if self.ing_to_ing_score_multiplier != 0:
+            policy_descriptions.append("ing2ing=" + str(self.ing_to_ing_score_multiplier))
+        if self.ing_prop_to_ing_prop_score_multiplier != 0:
+            policy_descriptions.append("ingP2ingP=" + str(self.ing_prop_to_ing_prop_score_multiplier))
+        if self.recipe_prop_to_ing_prop_score_multiplier != 0:
+            policy_descriptions.append("recP2ingP=" + str(self.recipe_prop_to_ing_prop_score_multiplier))
+        if self.recipe_property_similarity_score_multiplier != 0:
+            policy_descriptions.append("unsRecP=" + str(self.recipe_property_similarity_score_multiplier))
+        if self.original_ingredient_property_similarity_score_multiplier != 0:
+            policy_descriptions.append("unsIngP=" + str(self.original_ingredient_property_similarity_score_multiplier))
+
+        return "__".join(policy_descriptions)
 
     # retrieve properties of ingredient
     def perceive_ingredient(self, ingredient: str) -> set:
@@ -90,18 +111,21 @@ class Agent:
         original_ingredient_properties = self.perceive_ingredient(original_ingredient)
         new_ingredient_properties = self.perceive_ingredient(new_ingredient)
 
-        # update recipe properties counter
-        for recipe_property in rest_recipe_properties:
-            for new_ingredient_property in new_ingredient_properties:
-                self.recipe_to_new_ingredient_matching_property_counter[recipe_property][new_ingredient_property] += 1
+        if self.recipe_prop_to_ing_prop_score_multiplier != 0:
+            # update recipe properties counter
+            for recipe_property in rest_recipe_properties:
+                for new_ingredient_property in new_ingredient_properties:
+                    self.recipe_to_new_ingredient_matching_property_counter[recipe_property][new_ingredient_property] += 1
 
-        # update ingredient properties counter
-        for original_ingredient_property in original_ingredient_properties:
-            for new_ingredient_property in new_ingredient_properties:
-                self.recipe_to_new_ingredient_matching_property_counter[original_ingredient_property][new_ingredient_property] += 1
+        if self.ing_prop_to_ing_prop_score_multiplier != 0:
+            # update ingredient properties counter
+            for original_ingredient_property in original_ingredient_properties:
+                for new_ingredient_property in new_ingredient_properties:
+                    self.original_ingredient_to_new_ingredient_matching_property_counter[original_ingredient_property][new_ingredient_property] += 1
 
-        # update ingredient to ingredient counter
-        self.ingredient_to_ingredient_substitution_counter[original_ingredient][new_ingredient] += 1
+        if self.ing_to_ing_score_multiplier != 0:
+            # update ingredient to ingredient counter
+            self.ingredient_to_ingredient_substitution_counter[original_ingredient][new_ingredient] += 1
 
     # infer
     def infer_on_ingredient_substitution_query(self, recipe_ingredients: set[URIRef], original_ingredient: URIRef) -> list[URIRef]:
@@ -165,3 +189,5 @@ class Agent:
         ranked_ingredient_candidates = [ingredient_iri for ingredient_iri, _ in ranked_ingredient_candidates_and_scores]
 
         return ranked_ingredient_candidates
+
+    # def choose_example_to_be_taught_next(self, recipe_ingredients:list[list[set[ingredients]]]):
