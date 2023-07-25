@@ -1,35 +1,23 @@
 from typing import Optional, Generator, Set, Tuple
-from rdflib import Graph, Namespace, URIRef, RDF
+from rdflib import Graph, Namespace, URIRef, RDF, OWL
 from utils import *
 from collections import defaultdict
 
 
 class Agent:
-    def __init__(self, ingredient_property_knowledge_sources_to_namespace_dict: Optional[dict[str, str]] = None,
-                 ingredient_knowledge_source_per_ontology_filename_prefix: str = "Dataset/ingredient_properties_from_ontology_",
-                ing_prop_to_ing_prop_score_multiplier: int=0,
-                recipe_prop_to_ing_prop_score_multiplier: int=0,
-                ing_to_ing_score_multiplier: int=1,
-                recipe_property_similarity_score_multiplier: int=0,
-                original_ingredient_property_similarity_score_multiplier: int=0
+    def __init__(self, ingredient_properties: list[str],
+                 ing_prop_to_ing_prop_score_multiplier: int=0,
+                 recipe_prop_to_ing_prop_score_multiplier: int=0,
+                 ing_to_ing_score_multiplier: int=1,
+                 recipe_property_similarity_score_multiplier: int=0,
+                 original_ingredient_property_similarity_score_multiplier: int=0
                  ):
 
-        if ingredient_property_knowledge_sources_to_namespace_dict is None:
-            # ingredient_property_knowledge_sources_to_namespace_dict: dict[str:str] = {"obo": "http://purl.obolibrary.org/obo/", "b_node": "_:"}
-            ingredient_property_knowledge_sources_to_namespace_dict: dict[str:str] = {
-                "obo": "http://purl.obolibrary.org/obo/"}
 
         # ingredient_knowledge_source_per_ontology_filename_prefix = "ingredient_properties_from_ontology_obo.ttl"
         # [Optional] you can load property frequencies to be used as idf
-
-        self.ingredient_knowledge = Graph()
-
-        for knowledge_source_ontology_name in ingredient_property_knowledge_sources_to_namespace_dict:
-            knowledge_source_filename = ingredient_knowledge_source_per_ontology_filename_prefix + knowledge_source_ontology_name + ".ttl"
-            knowledge_source_graph = Graph()
-            knowledge_source_graph.parse(knowledge_source_filename)
-            self.ingredient_knowledge += knowledge_source_graph
-
+        self.ingredient_properties_list = ingredient_properties
+        self.load_ingredient_properties(ingredient_properties)
 
         # learning ingredient substitution scores based on learnt property matching scores
         # property to property
@@ -48,6 +36,9 @@ class Agent:
         self.recipe_property_similarity_score_multiplier: int = recipe_property_similarity_score_multiplier
         self.original_ingredient_property_similarity_score_multiplier: int = original_ingredient_property_similarity_score_multiplier
 
+    def get_agent_ing_perception_str_description(self) -> str:
+        return "ing_perception=" + "_".join(self.ingredient_properties_list)
+
     def get_agent_policy_str_description(self) -> str:
         policy_descriptions: list[str] = []
 
@@ -63,6 +54,29 @@ class Agent:
             policy_descriptions.append("unsIngP=" + str(self.original_ingredient_property_similarity_score_multiplier))
 
         return "__".join(policy_descriptions)
+
+    def load_ingredient_properties(self, ingredient_properties: list[str], skip_classes: list[str] = [str(OWL.Thing)], skip_namespaces: list[str]=["_:"]) -> None:
+        self.ingredient_knowledge = Graph()
+
+        for ingredient_properties_prefix in ingredient_properties:
+            properties_filepath = ingredient_property_category_to_query_result_csv_filepath(ingredient_properties_prefix)
+
+            with open(properties_filepath, "r") as ingredient_properties_csv_file:
+                # we skip the first line with the headers
+                ingredient_properties_csv_file.readline()
+
+                line = ingredient_properties_csv_file.readline()
+                while line is not None and line != "":
+                    ingredient_IRI, ingredient_class = line[:-1].split(",")
+                    # if ingredient_class in skip_classes:
+                    #     continue
+                    #
+                    # for skip_namespace in skip_namespaces:
+                    #     if ingredient_class.startswith(skip_namespace):
+                    #         continue
+                    self.ingredient_knowledge.add((URIRef(ingredient_IRI), RDF.type, URIRef(ingredient_class)))
+                    line = ingredient_properties_csv_file.readline()
+
 
     # retrieve properties of ingredient
     def perceive_ingredient(self, ingredient: str) -> set:

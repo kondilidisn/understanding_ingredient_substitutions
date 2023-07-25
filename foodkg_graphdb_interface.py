@@ -535,8 +535,8 @@ class FoodKGGraphDBInterface:
 
 
     def write_class_memberships_of_ingredients_to_file_with_their_frequencies(self,
-        important_property_prefixes_dict: Optional[dict[str,str]] = None,
-        out_directory:str="Dataset", load_query_results_from_file="Dataset/all_equivalent_classes_of_all_ingredients.csv"):
+        important_property_prefixes_dict: Optional[dict[str, str]] = None,
+        out_directory:str="Dataset", load_query_results_from_file="Dataset/Ingredient_property_query_results"):
 
 
         if important_property_prefixes_dict is None:

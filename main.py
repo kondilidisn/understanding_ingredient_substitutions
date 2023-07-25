@@ -15,28 +15,30 @@ if __name__ == '__main__':
 
     # Experiment parameters
     # parser.add_argument("--repetitions", default=10, type=int)
-    parser.add_argument("--max_steps", default=38142, type=int) # one epoch is currently 38142 training samples
+    parser.add_argument("--max_steps", default=10000, type=int) # one epoch is currently 38142 training samples
     parser.add_argument("--eval_every", default=1000, type=int)
     parser.add_argument("--run_complete_epoch", action="store_true",
                     help="train for a complete epoch & --eval_every 5000")
 
-    parser.add_argument("--ing2ing", default=1, type=int, help="ingredient_to_ingredient_substitution_counter")
-    parser.add_argument("--ingP2ingP", default=0, type=int, help="ing_prop_to_ing_prop_score_multiplier")
+    parser.add_argument("--ing2ing", default=5, type=int, help="ingredient_to_ingredient_substitution_counter")
+    parser.add_argument("--ingP2ingP", default=1, type=int, help="ing_prop_to_ing_prop_score_multiplier")
     parser.add_argument("--recP2ingP", default=0, type=int, help="recipe_prop_to_ing_prop_score_multiplier")
     parser.add_argument("--unsRecP", default=0, type=int, help="recipe_property_similarity_score_multiplier")
-    parser.add_argument("--unsIngP", default=1, type=int, help="original_ingredient_property_similarity_score_multiplier")
+    parser.add_argument("--unsIngP", default=0, type=int, help="original_ingredient_property_similarity_score_multiplier")
 
 
     # Dataset Parameters
     parser.add_argument('--dataset_dir', type=str, default="Dataset")
     parser.add_argument('--ing_prop_from_ont_filename_starts_with', type=str, default="ingredient_properties_from_ontology_")
-    parser.add_argument('--ing_properties_sources_ont', '--list', nargs='+', help='<Required> Set flag', default=["obo"])
+    parser.add_argument('--ing_props', '--list', nargs='+', help='["foodOn", "foodOn_one_hop", "foodOn_all_hops"]', default=["foodOn"]) # [foodOn, foodOn_one_hop, foodOn_all_hops]
+    # parser.add_argument('--ing_properties_sources_ont', '--list', nargs='+', help='<Required> Set flag', default=["obo"])
     # python main.py -ing_properties_sources obo usda flavor
     args = parser.parse_args()
 
-    ingredient_property_knowledge_sources_to_namespace_dict: dict[str, str] = dict()
-    for ontology_prefix in args.ing_properties_sources_ont:
-        ingredient_property_knowledge_sources_to_namespace_dict["obo"] = ingredient_prefix_to_namespace(ontology_prefix)
+    # make sure all ingredient properties make sense
+    for ingredient_property_category in args.ing_props:
+        ingredient_property_category_to_query_result_csv_filepath(ingredient_property_category)
+    #     if it is not found, an error will occur
 
 
     # print("_".join(args.ing_properties_sources_ont))
@@ -46,18 +48,17 @@ if __name__ == '__main__':
     # if not os.path.exists(args.dataset_dir):
     #     raise ValueError(f"Dataset path '{args.dataset_dir}' could not be found!")
 
-    agent = Agent(ing_to_ing_score_multiplier=args.ing2ing,
+    agent = Agent(
+                  ingredient_properties=args.ing_props, ing_to_ing_score_multiplier=args.ing2ing,
                   ing_prop_to_ing_prop_score_multiplier=args.ingP2ingP,
                   recipe_prop_to_ing_prop_score_multiplier=args.recP2ingP,
                   recipe_property_similarity_score_multiplier=args.unsRecP,
-                  original_ingredient_property_similarity_score_multiplier=args.unsIngP,
-                  ingredient_property_knowledge_sources_to_namespace_dict=ingredient_property_knowledge_sources_to_namespace_dict,
-                  ingredient_knowledge_source_per_ontology_filename_prefix=os.path.join(args.dataset_dir, args.ing_prop_from_ont_filename_starts_with))
+                  original_ingredient_property_similarity_score_multiplier=args.unsIngP)
 
     experiment_directory: str = ""
 
     experiment_directory += agent.get_agent_policy_str_description()
-    experiment_directory += "__prop_sources_" + "_".join(args.ing_properties_sources_ont)
+    experiment_directory += "__" + agent.get_agent_ing_perception_str_description()
 
     experiment_directory = os.path.join(args.exp_dir, experiment_directory)
 
@@ -86,6 +87,7 @@ if __name__ == '__main__':
     print("Loading training and validation splits")
 
     train_substitutions_graph = Graph()
+    # train_substitutions_graph.parse("Dataset/substitutions_graph_val.ttl")
     train_substitutions_graph.parse("Dataset/substitutions_graph_train.ttl")
     num_of_training_samples: int = get_number_of_substitution_samples_in_graph(train_substitutions_graph)
     print("Training data loaded, containing ingredient substitutions:", num_of_training_samples)
