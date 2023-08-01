@@ -1,11 +1,14 @@
+import math
+from math import floor
 from typing import Optional, Generator, Set, Tuple
 from rdflib import Graph, Namespace, URIRef, RDF, OWL
 from utils import *
 from collections import defaultdict
+import os
 
 
 class Agent:
-    def __init__(self, ingredient_properties: list[str],
+    def __init__(self, ingredient_properties: list[str], property_filters: dict[str, float],
                  ing_prop_to_ing_prop_score_multiplier: int=0,
                  recipe_prop_to_ing_prop_score_multiplier: int=0,
                  ing_to_ing_score_multiplier: int=1,
@@ -16,8 +19,10 @@ class Agent:
 
         # ingredient_knowledge_source_per_ontology_filename_prefix = "ingredient_properties_from_ontology_obo.ttl"
         # [Optional] you can load property frequencies to be used as idf
+        self.ingredient_knowledge:Graph = Graph()
         self.ingredient_properties_list = ingredient_properties
-        self.load_ingredient_properties(ingredient_properties)
+        self.property_filters = property_filters
+        self.load_ingredient_properties()
 
         # learning ingredient substitution scores based on learnt property matching scores
         # property to property
@@ -37,7 +42,14 @@ class Agent:
         self.original_ingredient_property_similarity_score_multiplier: int = original_ingredient_property_similarity_score_multiplier
 
     def get_agent_ing_perception_str_description(self) -> str:
-        return "ing_perception=" + "_".join(self.ingredient_properties_list)
+        ingredient_perception_str_description: str = ""
+        # if the ingredient properties are actually used somehow:
+        if self.ing_prop_to_ing_prop_score_multiplier != 0 or self.recipe_prop_to_ing_prop_score_multiplier != 0:
+            ingredient_perception_str_description = "ing_perception=" + "_".join(self.ingredient_properties_list)
+            if self.property_filters["top_prop_percent"] != 100:
+                ingredient_perception_str_description += "_least_" + str(self.property_filters["top_prop_percent"]) + "_freq_props"
+
+        return ingredient_perception_str_description
 
     def get_agent_policy_str_description(self) -> str:
         policy_descriptions: list[str] = []
@@ -55,11 +67,15 @@ class Agent:
 
         return "__".join(policy_descriptions)
 
-    def load_ingredient_properties(self, ingredient_properties: list[str], skip_classes: list[str] = [str(OWL.Thing)], skip_namespaces: list[str]=["_:"]) -> None:
-        self.ingredient_knowledge = Graph()
+    def load_ingredient_properties(self, skip_classes: list[str]=[str(OWL.Thing)], skip_namespaces: list[str]=["_:"]) -> None:
 
-        for ingredient_properties_prefix in ingredient_properties:
+        top_prop_percent: float = self.property_filters["top_prop_percent"]
+        property_frequencies: dict[URIRef, int] = defaultdict(int)
+        # line_counter: int = 0
+
+        for ingredient_properties_prefix in self.ingredient_properties_list:
             properties_filepath = ingredient_property_category_to_query_result_csv_filepath(ingredient_properties_prefix)
+            print("The agent is loading the ingredient properties from file:", properties_filepath)
 
             with open(properties_filepath, "r") as ingredient_properties_csv_file:
                 # we skip the first line with the headers
@@ -67,16 +83,56 @@ class Agent:
 
                 line = ingredient_properties_csv_file.readline()
                 while line is not None and line != "":
+                    # if line_counter % 1000 == 0:
+                        # print("Properties read:", line_counter)
+                        # print(line)
+                    # line_counter += 1
                     ingredient_IRI, ingredient_class = line[:-1].split(",")
-                    # if ingredient_class in skip_classes:
-                    #     continue
+                    if ingredient_class in skip_classes:
+                        line = ingredient_properties_csv_file.readline()
+                        continue
                     #
-                    # for skip_namespace in skip_namespaces:
-                    #     if ingredient_class.startswith(skip_namespace):
-                    #         continue
+                    for skip_namespace in skip_namespaces:
+                        if ingredient_class.startswith(skip_namespace):
+                            line = ingredient_properties_csv_file.readline()
+                            continue
+
                     self.ingredient_knowledge.add((URIRef(ingredient_IRI), RDF.type, URIRef(ingredient_class)))
+                    if top_prop_percent != 100:
+                        property_frequencies[URIRef(ingredient_class)] += 1
                     line = ingredient_properties_csv_file.readline()
 
+        # use only the leas frequent ingredient properties, if requested
+        if top_prop_percent != 100:
+            ranked_properties_by_freq = [(property, property_frequencies[property]) for
+                                                       property in property_frequencies]
+            ranked_properties_by_freq.sort(reverse=False, key=lambda x: x[1])
+            num_of_properties = math.ceil((top_prop_percent / 100) * len(ranked_properties_by_freq))
+
+            least_frequent_properties = set([property for property, _ in ranked_properties_by_freq[:num_of_properties]])
+
+            filtered_ingredient_knowledge = Graph()
+            for ingredient, property_type, property in self.ingredient_knowledge:
+                if property in least_frequent_properties:
+                    filtered_ingredient_knowledge.add((ingredient, property_type, property))
+
+            self.ingredient_knowledge = filtered_ingredient_knowledge
+
+    def write_ingredient_knowledge(self, exp_dir:str) -> None:
+        #     write to a file the ingredient knowledge
+        ingredient_knowledge_filename = os.path.join(exp_dir, "ingredient_knowledge.ttl")
+        self.ingredient_knowledge.serialize(destination=ingredient_knowledge_filename, format='turtle')
+        print("Ingredient knowledge was writen in file:", ingredient_knowledge_filename)
+        properties:set = set()
+        ingredients:set = set()
+        for ingredient, _, ing_property in self.ingredient_knowledge.triples((None, None, None)):
+            ingredients.add(ingredient)
+            properties.add(ing_property)
+        print("Total number of ingredients:", len(ingredients))
+        print("Total number of properties:", len(properties))
+        print("Total number of ingredient-property relations:", len(self.ingredient_knowledge))
+
+    #   TODO: also save a histogram as a fig ?
 
     # retrieve properties of ingredient
     def perceive_ingredient(self, ingredient: str) -> set:
@@ -199,7 +255,7 @@ class Agent:
 
         # print(len(candidate_ingredient_scores))
         ranked_ingredient_candidates_and_scores = [(ingredient_iri, candidate_ingredient_scores[ingredient_iri]) for ingredient_iri in candidate_ingredient_scores]
-        ranked_ingredient_candidates_and_scores.sort(key=lambda x: x[1])
+        ranked_ingredient_candidates_and_scores.sort(reverse=True, key=lambda x: x[1])
         ranked_ingredient_candidates = [ingredient_iri for ingredient_iri, _ in ranked_ingredient_candidates_and_scores]
 
         return ranked_ingredient_candidates
