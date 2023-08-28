@@ -137,10 +137,6 @@ def evaluate_agent(agent: Agent, substitution_dataset: BasicSubstitutionsDataset
 
     return performance_record_dict
 
-    # with open(log_filename, "a") as log_file:
-    #     log_file.write(performance_print_str + "\n")
-    # print(performance_print_str)
-
 def train_agent(agent: Agent, train_dataset: TrainingDatasetActiveLearningDataset, val_dataset: BasicSubstitutionsDataset,
                 test_dataset: Optional[BasicSubstitutionsDataset], experiment_directory:str, eval_every:int, max_steps:int,
                 one_epoch: bool = False, tensorboardwriter=None, agent_asks_questions:bool=False):
