@@ -292,8 +292,8 @@ def create_graph_with_recipes_and_substitutions_in_FoodKG(foodkg_graphdb_interfa
     substitutions_namespace = Namespace("http://lr.cs.vu.nl/ingredient_substitutions#")
     uses_ingredient_predicate = substitutions_namespace.term("uses_ingredient")
     has_suggested_substitution_predicate = substitutions_namespace.term("has_suggested_substitution")
-    original_ingredient_predicate = substitutions_namespace.term("ingredient_b_iri")
-    new_ingredient_predicate = substitutions_namespace.term("ingredient_a_iri")
+    original_ingredient_predicate = substitutions_namespace.term("original_ingredient")
+    new_ingredient_predicate = substitutions_namespace.term("new_ingredient")
 
     registered_substitutions_per_recipe_id_counter = defaultdict(int)
 

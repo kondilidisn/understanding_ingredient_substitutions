@@ -1,1 +1,3 @@
 rdflib
+matplotlib
+numpy

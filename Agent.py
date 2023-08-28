@@ -1,10 +1,11 @@
 import math
 from math import floor
-from typing import Optional, Generator, Set, Tuple
+from typing import Optional, Generator, Set, Tuple, List
 from rdflib import Graph, Namespace, URIRef, RDF, OWL
 from utils import *
 from collections import defaultdict
 import os
+import numpy as np
 
 
 class Agent:
@@ -13,7 +14,10 @@ class Agent:
                  recipe_prop_to_ing_prop_score_multiplier: int=0,
                  ing_to_ing_score_multiplier: int=1,
                  recipe_property_similarity_score_multiplier: int=0,
-                 original_ingredient_property_similarity_score_multiplier: int=0
+                 original_ingredient_property_similarity_score_multiplier: int=0,
+                 introspection_ing_freq_multiplier:float =0,
+                 introspection_ing_prop_freq_multiplier:float =0,
+                 introspection_epsilon_greedy: float=0.1
                  ):
 
 
@@ -41,6 +45,28 @@ class Agent:
         self.recipe_property_similarity_score_multiplier: int = recipe_property_similarity_score_multiplier
         self.original_ingredient_property_similarity_score_multiplier: int = original_ingredient_property_similarity_score_multiplier
 
+        # introspection_parameters
+        # self.introspection_policy = introspection_policy
+        self.introspection_ing_freq_multiplier = introspection_ing_freq_multiplier
+        self.introspection_ing_prop_freq_multiplier = introspection_ing_prop_freq_multiplier
+        self.introspection_epsilon_greedy = introspection_epsilon_greedy
+
+    def save_agents_static_knowledge(self, save_dir):
+        # ingredient_properties
+        # property_filters
+        # ing_prop_to_ing_prop_score_multiplier
+        # recipe_prop_to_ing_prop_score_multiplier
+        # ing_to_ing_score_multiplier
+        # recipe_property_similarity_score_multiplier
+        # original_ingredient_property_similarity_score_multiplier
+        pass
+
+    def save_agents_dynamic_knowledge(self, save_dir):
+        # original_ingredient_to_new_ingredient_matching_property_counter
+        # recipe_to_new_ingredient_matching_property_counter
+        # ingredient_to_ingredient_substitution_counter
+        pass
+
     def get_agent_ing_perception_str_description(self) -> str:
         ingredient_perception_str_description: str = ""
         # if the ingredient properties are actually used somehow:
@@ -67,10 +93,35 @@ class Agent:
 
         return "__".join(policy_descriptions)
 
+    def get_agent_introspection_policy_str_description(self) -> str:
+        introspection_policy_description:str = ""
+
+        if self.introspection_ing_freq_multiplier == 0 and self.introspection_ing_prop_freq_multiplier == 0:
+            introspection_policy_description = "_random"
+        else:
+            introspection_policy_description = "_epsilon_greedy_" + str(self.introspection_epsilon_greedy)
+
+        print(self.introspection_ing_freq_multiplier)
+        if self.introspection_ing_freq_multiplier != 0:
+            introspection_policy_description += "_ing_" + str(self.introspection_ing_freq_multiplier)
+
+        if self.introspection_ing_prop_freq_multiplier != 0:
+            introspection_policy_description += "_ing_prop_" + str(self.introspection_ing_prop_freq_multiplier)
+
+        print(introspection_policy_description)
+
+        return introspection_policy_description
+
+    def uses_introspection(self) -> bool:
+        if self.introspection_ing_freq_multiplier == 0 and self.introspection_ing_prop_freq_multiplier == 0:
+            return False
+        else:
+            return True
+
     def load_ingredient_properties(self, skip_classes: list[str]=[str(OWL.Thing)], skip_namespaces: list[str]=["_:"]) -> None:
 
         top_prop_percent: float = self.property_filters["top_prop_percent"]
-        property_frequencies: dict[URIRef, int] = defaultdict(int)
+        self.property_frequencies: dict[URIRef, int] = defaultdict(int)
         # line_counter: int = 0
 
         for ingredient_properties_prefix in self.ingredient_properties_list:
@@ -99,13 +150,13 @@ class Agent:
 
                     self.ingredient_knowledge.add((URIRef(ingredient_IRI), RDF.type, URIRef(ingredient_class)))
                     if top_prop_percent != 100:
-                        property_frequencies[URIRef(ingredient_class)] += 1
+                        self.property_frequencies[URIRef(ingredient_class)] += 1
                     line = ingredient_properties_csv_file.readline()
 
         # use only the leas frequent ingredient properties, if requested
         if top_prop_percent != 100:
-            ranked_properties_by_freq = [(property, property_frequencies[property]) for
-                                                       property in property_frequencies]
+            ranked_properties_by_freq = [(property, self.property_frequencies[property]) for
+                                                       property in self.property_frequencies]
             ranked_properties_by_freq.sort(reverse=False, key=lambda x: x[1])
             num_of_properties = math.ceil((top_prop_percent / 100) * len(ranked_properties_by_freq))
 
@@ -135,8 +186,8 @@ class Agent:
     #   TODO: also save a histogram as a fig ?
 
     # retrieve properties of ingredient
-    def perceive_ingredient(self, ingredient: str) -> set:
-        return set(self.ingredient_knowledge.objects(subject=URIRef(ingredient), predicate=RDF.type))
+    def perceive_ingredient(self, ingredient: URIRef) -> set:
+        return set(self.ingredient_knowledge.objects(subject=ingredient, predicate=RDF.type))
 
     # retrieve the set of all ingredient properties' within a recipe
     def perceive_recipe(self, recipe_ingredients: set[URIRef],  exclude_ingredient: Optional[URIRef]) -> Set[URIRef]:
@@ -261,3 +312,85 @@ class Agent:
         return ranked_ingredient_candidates
 
     # def choose_example_to_be_taught_next(self, recipe_ingredients:list[list[set[ingredients]]]):
+
+    def receive_available_training_data(self, ingredient_substitutions:List[URIRef], all_recipe_ingredients:List[Set[URIRef]], source_ingredients:List[URIRef]):
+        self.ingredient_substitutions:List[URIRef] = ingredient_substitutions
+        self.all_recipe_ingredients:List[Set[URIRef]] = all_recipe_ingredients
+        self.original_ingredients:List[URIRef] = source_ingredients
+        self.number_of_remaining_subs_to_learn = len(self.ingredient_substitutions)
+
+
+    def init_introspection(self):
+        self.original_ingredient_frequencies: defaultdict[URIRef:int] = defaultdict(int)
+        self.original_ingredient_property_frequencies: defaultdict[URIRef:int] = defaultdict(int)
+
+        for original_ingredient in self.original_ingredients:
+            if self.introspection_ing_freq_multiplier != 0:
+                self.original_ingredient_frequencies[original_ingredient] += 1
+
+            if self.introspection_ing_prop_freq_multiplier != 0:
+                for original_ingredient_property in self.perceive_ingredient(original_ingredient):
+                    self.original_ingredient_property_frequencies[original_ingredient_property] += 1
+
+
+    def decide_which_substitution_to_reveal_next(self) -> tuple[URIRef, set[URIRef], URIRef]:
+        expected_informativeness_scores:list[float] = []
+        for i in range(self.number_of_remaining_subs_to_learn):
+            recipe_ingredients = self.all_recipe_ingredients[i]
+            original_ingredient = self.original_ingredients[i]
+            expected_informativeness_score = self.get_expected_substitution_informativeness(recipe_ingredients, original_ingredient)
+            expected_informativeness_scores.append(expected_informativeness_score)
+
+        assert self.number_of_remaining_subs_to_learn == len(expected_informativeness_scores)
+
+        # normalize values and prepare for epsilon greedy sampling
+        epsilon_greedy_scores = np.asarray(expected_informativeness_scores)
+        # normalize
+        epsilon_greedy_scores /= np.sum(epsilon_greedy_scores)
+        # add epsilon
+        epsilon_greedy_scores += self.introspection_epsilon_greedy / self.number_of_remaining_subs_to_learn
+        # re-normalize
+        epsilon_greedy_scores /= np.sum(epsilon_greedy_scores)
+
+
+        # we get the estimated most informative substitution, probabilistically
+        index_of_highest_expected_informative_substitution = np.random.choice(list(range(self.number_of_remaining_subs_to_learn)), p=epsilon_greedy_scores)
+        # non-probabilistic option:
+        # index_of_highest_expected_informative_substitution = np.argmax(expected_informativeness_scores)
+
+        # we retrieve the substitution
+        selected_substitution_iri = self.ingredient_substitutions[index_of_highest_expected_informative_substitution]
+        selected_recipe_ingredients = self.all_recipe_ingredients[index_of_highest_expected_informative_substitution]
+        selected_original_ingredient = self.original_ingredients[index_of_highest_expected_informative_substitution]
+
+        # we update the source ingredients frequencies
+        if self.introspection_ing_freq_multiplier != 0:
+            self.original_ingredient_frequencies[selected_original_ingredient] -= 1
+
+        if self.introspection_ing_prop_freq_multiplier != 0:
+            for original_ingredient_property in self.perceive_ingredient(selected_original_ingredient):
+                self.original_ingredient_property_frequencies[original_ingredient_property] -= 1
+
+        # we remove this substitution from the candidate learning pool
+        del self.ingredient_substitutions[index_of_highest_expected_informative_substitution]
+        del self.all_recipe_ingredients[index_of_highest_expected_informative_substitution]
+        del self.original_ingredients[index_of_highest_expected_informative_substitution]
+        self.number_of_remaining_subs_to_learn -= 1
+
+        return selected_substitution_iri, selected_recipe_ingredients, selected_original_ingredient
+
+
+    def get_expected_substitution_informativeness(self, recipe_ingredients:set[URIRef], original_ingredient:URIRef) -> float:
+        ingredient_informativeness_score:float = 0
+        if self.introspection_ing_freq_multiplier != 0:
+            ingredient_informativeness_score = np.log(self.original_ingredient_frequencies[original_ingredient] + 1)
+
+        ingredients_property_informativeness_score:float = 0
+        if self.introspection_ing_prop_freq_multiplier != 0:
+            for source_ingredient_property in self.perceive_ingredient(original_ingredient):
+                ingredients_property_informativeness_score += np.log(self.original_ingredient_property_frequencies[source_ingredient_property] + 1)
+
+
+        return self.introspection_ing_freq_multiplier * ingredient_informativeness_score + \
+               self.introspection_ing_prop_freq_multiplier * ingredients_property_informativeness_score
+

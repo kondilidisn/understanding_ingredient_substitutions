@@ -658,3 +658,11 @@ class FoodKGGraphDBInterface:
 # print(get_IRI_of_ingredient_matched_by_rdfs_label(ingredient_name="pie shell"))
 
 # get_FoodKG_ingredient_IRIs_of_recipe_given_url("http://www.food.com/recipe/sachertorte-cookies-170040")
+
+
+#
+# foodkg_graphdb_interface = FoodKGGraphDBInterface(load_ingredient_indexes_from_files=True)
+#
+# ingredient_results = foodkg_graphdb_interface.get_ingredient_short_IRI_from_1Msubs_to_foodKG_by_IRI_or_name("all_-_purpose_flour")
+# print(ingredient_results)
+# print("ok")
