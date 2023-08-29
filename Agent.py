@@ -69,11 +69,9 @@ class Agent:
 
     def get_agent_ing_perception_str_description(self) -> str:
         ingredient_perception_str_description: str = ""
-        # if the ingredient properties are actually used somehow:
-        if self.ing_prop_to_ing_prop_score_multiplier != 0 or self.recipe_prop_to_ing_prop_score_multiplier != 0:
-            ingredient_perception_str_description = "ing_perception=" + "_".join(self.ingredient_properties_list)
-            if self.property_filters["top_prop_percent"] != 100:
-                ingredient_perception_str_description += "_least_" + str(self.property_filters["top_prop_percent"]) + "_freq_props"
+        ingredient_perception_str_description = "ing_perception=" + "_".join(self.ingredient_properties_list)
+        if self.property_filters["top_prop_percent"] != 100:
+            ingredient_perception_str_description += "_least_" + str(self.property_filters["top_prop_percent"]) + "_freq_props"
 
         return ingredient_perception_str_description
 
@@ -101,14 +99,11 @@ class Agent:
         else:
             introspection_policy_description = "_epsilon_greedy_" + str(self.introspection_epsilon_greedy)
 
-        print(self.introspection_ing_freq_multiplier)
         if self.introspection_ing_freq_multiplier != 0:
             introspection_policy_description += "_ing_" + str(self.introspection_ing_freq_multiplier)
 
         if self.introspection_ing_prop_freq_multiplier != 0:
             introspection_policy_description += "_ing_prop_" + str(self.introspection_ing_prop_freq_multiplier)
-
-        print(introspection_policy_description)
 
         return introspection_policy_description
 

@@ -52,7 +52,7 @@ def train_and_eval_all_recipe_subs(args) -> None:
         experiment_directory += "__" + args.exp_dir_addition
 
 
-    args.del_existing_exp_dir = True
+    # args.del_existing_exp_dir = True
 
     if os.path.exists(experiment_directory):
         if args.del_existing_exp_dir:
@@ -62,6 +62,8 @@ def train_and_eval_all_recipe_subs(args) -> None:
             raise ValueError("Experiment directory already exists!")
 
     os.mkdir(experiment_directory)
+
+
 
     # record the ingredient knowledge of the agent
     agent.write_ingredient_knowledge(experiment_directory)
@@ -83,8 +85,6 @@ def train_and_eval_all_recipe_subs(args) -> None:
     # val_substitutions_graph:Graph = Graph()
     val_dataset = BasicSubstitutionsDataset("Dataset/substitutions_graph_val.ttl")
     print("Validation data loaded, containing ingredient substitutions:", val_dataset.get_number_of_substitution_samples_in_graph())
-
-    test_substitutions_graph: Optional[Graph] = None
 
     test_dataset:Optional[BasicSubstitutionsDataset] = None
 

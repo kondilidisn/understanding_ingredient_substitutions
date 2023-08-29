@@ -123,8 +123,6 @@ def evaluate_agent(agent: Agent, substitution_dataset: BasicSubstitutionsDataset
 
     average_rank = target_rank_sum / number_of_samples
 
-    # performance_print_str = f"{split}, steps:{training_steps}| h@1:{hit_at_1:.4f}, h@10:{hit_at_10:.4f}, h@100:{hit_at_100:.4f}, av_rank:{average_rank:.1f}, av_results:{average_number_of_results:.1f}, #not_found:{ingredient_not_found_counter}"
-
     # record the performance in a dict
     performance_record_dict:dict = dict()
     performance_record_dict["Hit@1"] = hit_at_1
