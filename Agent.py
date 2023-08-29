@@ -328,7 +328,11 @@ class Agent:
                     self.original_ingredient_property_frequencies[original_ingredient_property] += 1
 
 
-    def decide_which_substitution_to_reveal_next(self) -> tuple[URIRef, set[URIRef], URIRef]:
+    def decide_which_substitution_to_reveal_next(self) -> Optional[tuple[URIRef, set[URIRef], URIRef]]:
+        # in case we run out of training data:
+        if self.number_of_remaining_subs_to_learn == 0:
+            return None
+
         expected_informativeness_scores:list[float] = []
         for i in range(self.number_of_remaining_subs_to_learn):
             recipe_ingredients = self.all_recipe_ingredients[i]

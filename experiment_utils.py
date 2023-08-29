@@ -163,7 +163,14 @@ def train_agent(agent: Agent, train_dataset: TrainingDatasetActiveLearningDatase
         for _ in tqdm(range(eval_every)):
 
             if agent_asks_questions:
-                selected_substitution_iri, recipe_ingredients, original_ingredient = agent.decide_which_substitution_to_reveal_next()
+                agents_substitution_query = agent.decide_which_substitution_to_reveal_next()
+                # in case the agent has queried over the complete training data, we terminate the training
+                if agents_substitution_query is None:
+                    print("Training of one epoch was completed.")
+                    terminate = True
+                    break
+                else:
+                    selected_substitution_iri, recipe_ingredients, original_ingredient = agents_substitution_query
                 new_ingredient = train_dataset.reveal_new_ingredient_of_substitution(selected_substitution_iri)
             else:
                 try:
@@ -171,8 +178,6 @@ def train_agent(agent: Agent, train_dataset: TrainingDatasetActiveLearningDatase
                 except:
                     if one_epoch:
                         print("Training of one epoch was completed.")
-                        # evaluate_agent(agent, val_substitutions_graph, log_filename, split=eval_split,
-                        #                training_steps=training_steps)
                         terminate = True
                         break
                     training_sample_generator = train_dataset.get_random_substitution_sample_generator()
@@ -184,7 +189,7 @@ def train_agent(agent: Agent, train_dataset: TrainingDatasetActiveLearningDatase
             agent.learn_from_example(recipe_ingredients=recipe_ingredients, original_ingredient=original_ingredient, new_ingredient=new_ingredient)
             training_steps += 1
             if training_steps == max_steps:
-                print(f"Training reached the maximum number of steps {max_steps}, and will now terminate")
+                print(f"Training reached the defined maximum number of steps ({max_steps}), and will now terminate")
                 terminate = True
                 break
 
