@@ -1,4 +1,8 @@
 from rdflib import URIRef, Graph, Namespace
+from collections import defaultdict
+
+def create_int_defaultdict():
+    return defaultdict(int)
 
 def ingredient_prefix_to_namespace(prefix:str) -> str:
     ontology_prefix_to_namespace_dict: dict = dict()

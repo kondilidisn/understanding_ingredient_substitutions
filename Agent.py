@@ -6,10 +6,10 @@ from utils import *
 from collections import defaultdict
 import os
 import numpy as np
-
+import pickle
 
 class Agent:
-    def __init__(self, ingredient_properties: list[str], property_filters: dict[str, float],
+    def __init__(self, ingredient_properties: Optional[list[str]] = None, property_filters: Optional[dict[str, float]] = None,
                  ing_prop_to_ing_prop_score_multiplier: int=0,
                  recipe_prop_to_ing_prop_score_multiplier: int=0,
                  ing_to_ing_score_multiplier: int=1,
@@ -20,7 +20,12 @@ class Agent:
                  introspection_epsilon_greedy: float=0.1
                  ):
 
+        if property_filters is None:
+            property_filters:dict[str, float] = dict()
+            property_filters["top_prop_percent"] = 100
 
+        if ingredient_properties is None:
+            ingredient_properties:list[str] = ["foodOn", "foodOn_one_hop"]
         # ingredient_knowledge_source_per_ontology_filename_prefix = "ingredient_properties_from_ontology_obo.ttl"
         # [Optional] you can load property frequencies to be used as idf
         self.ingredient_knowledge:Graph = Graph()
@@ -30,15 +35,15 @@ class Agent:
 
         # learning ingredient substitution scores based on learnt property matching scores
         # property to property
-        self.original_ingredient_to_new_ingredient_matching_property_counter = defaultdict(lambda: defaultdict(int))
+        self.original_ingredient_to_new_ingredient_matching_property_counter = defaultdict(create_int_defaultdict)
         self.ing_prop_to_ing_prop_score_multiplier: int = ing_prop_to_ing_prop_score_multiplier
         # property to property
-        self.recipe_to_new_ingredient_matching_property_counter = defaultdict(lambda: defaultdict(int))
+        self.recipe_to_new_ingredient_matching_property_counter = defaultdict(create_int_defaultdict)
         self.recipe_prop_to_ing_prop_score_multiplier: int = recipe_prop_to_ing_prop_score_multiplier
 
         # we also have a counter that keeps track of each directed ingredient substitution, in a directional manner
         # ingredient to ingredient
-        self.ingredient_to_ingredient_substitution_counter = defaultdict(lambda: defaultdict(int))
+        self.ingredient_to_ingredient_substitution_counter = defaultdict(create_int_defaultdict)
         self.ing_to_ing_score_multiplier: int = ing_to_ing_score_multiplier
 
         # unsupervised ingredient substitution multipliers
@@ -51,25 +56,93 @@ class Agent:
         self.introspection_ing_prop_freq_multiplier = introspection_ing_prop_freq_multiplier
         self.introspection_epsilon_greedy = introspection_epsilon_greedy
 
-    def save_agents_static_knowledge(self, save_dir):
-        # ingredient_properties
-        # property_filters
-        # ing_prop_to_ing_prop_score_multiplier
-        # recipe_prop_to_ing_prop_score_multiplier
-        # ing_to_ing_score_multiplier
-        # recipe_property_similarity_score_multiplier
-        # original_ingredient_property_similarity_score_multiplier
-        pass
+        self.variables_names_to_save:list[str] = ["ingredient_to_ingredient_substitution_counter",
+                                     "original_ingredient_to_new_ingredient_matching_property_counter",
+                                     "recipe_to_new_ingredient_matching_property_counter",
+                                     "ingredient_knowledge",
+                                     "ingredient_properties_list",
+                                     "property_filters",
+                                     "ing_prop_to_ing_prop_score_multiplier",
+                                     "recipe_prop_to_ing_prop_score_multiplier",
+                                     "ingredient_to_ingredient_substitution_counter",
+                                     "ing_to_ing_score_multiplier",
+                                     "recipe_property_similarity_score_multiplier",
+                                     "original_ingredient_property_similarity_score_multiplier",
+                                     "introspection_ing_freq_multiplier",
+                                     "introspection_ing_prop_freq_multiplier",
+                                     "introspection_epsilon_greedy"]
 
-    def save_agents_dynamic_knowledge(self, save_dir):
-        # original_ingredient_to_new_ingredient_matching_property_counter
-        # recipe_to_new_ingredient_matching_property_counter
-        # ingredient_to_ingredient_substitution_counter
-        pass
+    def load_agent(self, load_filename):
+        with open(load_filename, 'rb') as handle:
+            agent_instance_variables: dict = pickle.load(handle)
+
+        for variable_name in self.variables_names_to_save:
+            setattr(self, variable_name, agent_instance_variables[variable_name])
+
+    def save_agent(self, save_filename):
+        agent_instance_variables = dict()
+        for variable_name in self.variables_names_to_save:
+            agent_instance_variables[variable_name] = self.__getattribute__(variable_name)
+
+        with open(save_filename, 'wb') as handle:
+            pickle.dump(agent_instance_variables, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+    def reset_agents_dynamic_knowledge(self):
+        # reset agents ingredient substitution related knowledge
+        self.original_ingredient_to_new_ingredient_matching_property_counter = defaultdict(create_int_defaultdict)
+        self.recipe_to_new_ingredient_matching_property_counter = defaultdict(create_int_defaultdict)
+        self.ingredient_to_ingredient_substitution_counter = defaultdict(create_int_defaultdict)
+
+        # reset agents knowledge of training data
+        self.ingredient_substitutions:List[URIRef] = []
+        self.all_recipe_ingredients:List[Set[URIRef]] = [set()]
+        self.original_ingredients:List[URIRef] = []
+        self.number_of_remaining_subs_to_learn = 0
+
+        # reset agents introspection related variables
+        self.original_ingredient_frequencies: defaultdict[URIRef:int] = defaultdict(int)
+        self.original_ingredient_property_frequencies: defaultdict[URIRef:int] = defaultdict(int)
+
+
+    def save_agents_ingredient_substitution_knowledge(self, save_directory:str):
+        # create the directory
+        os.mkdir(save_directory)
+        # save the following variables to files using pickle
+        # self.ingredient_to_ingredient_substitution_counter = defaultdict(lambda: defaultdict(int))
+        # self.original_ingredient_to_new_ingredient_matching_property_counter = defaultdict(lambda: defaultdict(int))
+        # self.recipe_to_new_ingredient_matching_property_counter = defaultdict(lambda: defaultdict(int))
+        with open(os.path.join(save_directory, "ing2ing_sub_counter.pkl"), 'wb') as handle:
+            pickle.dump(self.ingredient_to_ingredient_substitution_counter, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        with open(os.path.join(save_directory, "ingProp2ingProp_sub_counter.pkl"), 'wb') as handle:
+            pickle.dump(self.original_ingredient_to_new_ingredient_matching_property_counter, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        with open(os.path.join(save_directory, "recProp2ingProp_sub_counter.pkl"), 'wb') as handle:
+            pickle.dump(self.recipe_to_new_ingredient_matching_property_counter, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+    def load_agents_ingredient_substitution_knowledge(self, save_directory:str):
+        # load the following variables from the drive in pickle form
+        self.ingredient_to_ingredient_substitution_counter = defaultdict(lambda: defaultdict(int))
+        self.original_ingredient_to_new_ingredient_matching_property_counter = defaultdict(lambda: defaultdict(int))
+        self.recipe_to_new_ingredient_matching_property_counter = defaultdict(lambda: defaultdict(int))
+
+        with open(os.path.join(save_directory, "ing2ing_sub_counter.pkl"), 'rb') as handle:
+            self.ingredient_to_ingredient_substitution_counter = pickle.load(handle)
+
+        with open(os.path.join(save_directory, "ingProp2ingProp_sub_counter.pkl"), 'rb') as handle:
+            self.original_ingredient_to_new_ingredient_matching_property_counter = pickle.load(handle)
+
+        with open(os.path.join(save_directory, "recProp2ingProp_sub_counter.pkl"), 'rb') as handle:
+            self.recipe_to_new_ingredient_matching_property_counter = pickle.load(handle)
 
     def get_agent_ing_perception_str_description(self) -> str:
-        ingredient_perception_str_description: str = ""
-        ingredient_perception_str_description = "ing_perception=" + "_".join(self.ingredient_properties_list)
+        if self.ing_prop_to_ing_prop_score_multiplier == 0 and self.recipe_prop_to_ing_prop_score_multiplier == 0 and \
+                self.introspection_ing_freq_multiplier == 0 and self.introspection_ing_prop_freq_multiplier == 0:
+            return "No_Ingredient_Perception_Used"
+
+        ingredient_perception_str_description:str = "ing_perception=" + "_".join(self.ingredient_properties_list)
         if self.property_filters["top_prop_percent"] != 100:
             ingredient_perception_str_description += "_least_" + str(self.property_filters["top_prop_percent"]) + "_freq_props"
 
@@ -150,6 +223,7 @@ class Agent:
 
         # use only the leas frequent ingredient properties, if requested
         if top_prop_percent != 100:
+            raise ValueError("make sure that the agent has at least one property per ingredient! Then also change the hardcoded vocabulary size of ingredients in evaluate_agent function!")
             ranked_properties_by_freq = [(property, self.property_frequencies[property]) for
                                                        property in self.property_frequencies]
             ranked_properties_by_freq.sort(reverse=False, key=lambda x: x[1])
@@ -167,7 +241,7 @@ class Agent:
     def write_ingredient_knowledge(self, exp_dir:str) -> None:
         #     write to a file the ingredient knowledge
         ingredient_knowledge_filename = os.path.join(exp_dir, "ingredient_knowledge.ttl")
-        self.ingredient_knowledge.serialize(destination=ingredient_knowledge_filename, format='turtle')
+        # self.ingredient_knowledge.serialize(destination=ingredient_knowledge_filename, format='turtle')
         print("Ingredient knowledge was writen in file:", ingredient_knowledge_filename)
         properties:set = set()
         ingredients:set = set()
@@ -178,7 +252,6 @@ class Agent:
         print("Total number of properties:", len(properties))
         print("Total number of ingredient-property relations:", len(self.ingredient_knowledge))
 
-    #   TODO: also save a histogram as a fig ?
 
     # retrieve properties of ingredient
     def perceive_ingredient(self, ingredient: URIRef) -> set:

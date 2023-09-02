@@ -1,14 +1,151 @@
 import os.path
-from typing import Optional, Tuple, Generator
+from typing import Optional, Tuple, Generator, List
 from Agent import Agent
 from rdflib import Graph, URIRef, Namespace
 from tqdm import tqdm
 import pickle
 from Datasets import BasicSubstitutionsDataset, TrainingDatasetActiveLearningDataset
+import numpy as np
+import shutil
 from collections import defaultdict
+from multiprocessing.pool import ThreadPool
+# from multiprocessing.dummy import Pool as ThreadPool
+
+
+
+def aggregate_agent_performance_over_exp_repetitions(agent_performance:list[dict[int,dict]]) \
+    -> Tuple[dict[int,dict], dict[int,dict]]:
+
+    agent_av_performance:dict[int,dict[int,dict]] = defaultdict(dict)
+    agent_std_performance:dict[int,dict[int,dict]] = defaultdict(dict)
+
+    # agent_performa
+    for training_step in agent_performance[0]:
+        for metric in agent_performance[0][training_step]:
+            aggregated_metric_performance_list:list = []
+            for repetition in range(len(agent_performance)):
+                aggregated_metric_performance_list.append(agent_performance[repetition][training_step][metric])
+            np_array = np.asarray(aggregated_metric_performance_list)
+            av_metric_step_performance = np.mean(np_array)
+            agent_av_performance[training_step][metric] = av_metric_step_performance
+            std_metric_step_performance = np.std(np_array)
+            agent_std_performance[training_step][metric] = std_metric_step_performance
+
+    return agent_av_performance, agent_std_performance
+
+
+
+def aggregate_statistics_of_dictionary_of_list_of_values(input_dict):
+    av_dict = {}
+    std_dict = {}
+    for key in input_dict:
+        object = input_dict[key]
+        if isinstance(object, list) and isinstance(object[0], (int, float)):
+            np_object = np.asarray(object)
+            av_dict[key] = np.mean(np_object)
+            std_dict[key] = np.std(np_object)
+        else:
+            av_dict[key] = object
+    return av_dict, std_dict
+
+def append_to_list_from_one_dictionary_to_other(source_dict, target_dict, keys_to_append_list=[]):
+    for key in keys_to_append_list:
+        # we make sure that we don't have lists of lists, but everything is kept in the same original 1-d list
+        if isinstance(source_dict[key], list):
+            target_dict[key] += source_dict[key]
+        else:
+            target_dict[key].append(source_dict[key])
+
+
+def create_exp_dir(args, agent) -> str:
+    experiment_directory: str = ""
+
+    experiment_directory += agent.get_agent_policy_str_description()
+
+    experiment_directory += "__" + agent.get_agent_ing_perception_str_description()
+
+    agents_introspection_policy_description = agent.get_agent_introspection_policy_str_description()
+    experiment_directory += "__introspection" + agents_introspection_policy_description
+
+    experiment_directory = os.path.join(args.exp_dir, experiment_directory)
+
+    if args.run_complete_epoch:
+        experiment_directory += "__complete_epoch"
+    else:
+        experiment_directory += "__max_steps_" + str(args.max_steps)
+
+    if args.exp_dir_addition != "":
+        experiment_directory += "__" + args.exp_dir_addition
+
+    # args.del_existing_exp_dir = True
+    print("Experiment directory:", experiment_directory)
+
+    if os.path.exists(experiment_directory):
+        if args.del_existing_exp_dir:
+            print(f"Directory {experiment_directory} already existed, but was deleted.")
+            shutil.rmtree(experiment_directory)
+        else:
+            print("Experiment directory already exists!")
+            exit()
+            # raise ValueError("Experiment directory already exists!")
+
+    os.mkdir(experiment_directory)
+
+    print("Running experiment to be saved in:\n" + experiment_directory)
+
+    return experiment_directory
+
+
+def load_data_splits(args) -> Tuple[TrainingDatasetActiveLearningDataset,
+                                    Optional[BasicSubstitutionsDataset], Optional[BasicSubstitutionsDataset]]:
+    print("Loading training and validation splits")
+
+    train_dataset = TrainingDatasetActiveLearningDataset("Dataset/substitutions_graph_train.ttl")
+    print("Training data loaded, containing ingredient substitutions:",
+          train_dataset.get_number_of_substitution_samples_in_graph())
+
+    val_dataset: Optional[BasicSubstitutionsDataset] = None
+    if not args.skip_val:
+        val_dataset = BasicSubstitutionsDataset("Dataset/substitutions_graph_val.ttl")
+        print("Validation data loaded, containing ingredient substitutions:",
+              val_dataset.get_number_of_substitution_samples_in_graph())
+
+    test_dataset: Optional[BasicSubstitutionsDataset] = None
+
+    if args.report_test:
+        test_dataset = BasicSubstitutionsDataset("Dataset/substitutions_graph_test.ttl")
+        print("Test data loaded, containing ingredient substitutions:",
+              test_dataset.get_number_of_substitution_samples_in_graph())
+
+    return train_dataset, val_dataset, test_dataset
+
+
+
 
 # def get_namespace_of_ontology(prefix:str) -> str:
 #     pass
+#
+# def aggregate_statistics_of_dictionary_of_list_of_values(input_dict):
+#     av_dict = {}
+#     std_dict = {}
+#     for key in input_dict:
+#         object = input_dict[key]
+#         if isinstance(object, list) and isinstance(object[0], (int, float)):
+#             np_object = np.asarray(object)
+#             av_dict[key] = np.mean(np_object)
+#             std_dict[key] = np.std(np_object)
+#         else:
+#             av_dict[key] = object
+#     return av_dict, std_dict
+#
+#
+# def append_to_list_from_one_dictionary_to_other(source_dict, target_dict, keys_to_append_list=[]):
+#     for key in keys_to_append_list:
+#         # we make sure that we don't have lists of lists, but everything is kept in the same original 1-d list
+#         if isinstance(source_dict[key], list):
+#             target_dict[key] += source_dict[key]
+#         else:
+#             target_dict[key].append(source_dict[key])
 
 
 def calculate_rank_of_target(ranked_candidates:list[URIRef], target:URIRef) -> Optional[int]:
@@ -52,10 +189,12 @@ def report_eval_performance(split, training_steps, performance_record_dict, expe
     hit_at_10 = performance_record_dict["Hit@10"]
     hit_at_100 = performance_record_dict["Hit@100"]
     average_rank = performance_record_dict["Target_Rank"]
+    mrr = performance_record_dict["MRR"]
     average_number_of_results = performance_record_dict["Results"]
-    ingredient_not_found_counter = performance_record_dict["|Not_Found|"]
+    target_found_ratio = performance_record_dict["Tar_Found"]
+    # ingredient_not_found_counter = performance_record_dict["|Not_Found|"]
 
-    performance_print_str = f"{split}, steps:{training_steps}| h@1:{hit_at_1:.4f}, h@3:{hit_at_3:.4f}, h@10:{hit_at_10:.4f}, h@100:{hit_at_100:.4f}, av_rank:{average_rank:.1f}, av_results:{average_number_of_results:.1f}, #not_found:{ingredient_not_found_counter}"
+    performance_print_str = f"{split}, steps:{training_steps}| h@1:{hit_at_1:.4f}, h@3:{hit_at_3:.4f}, h@10:{hit_at_10:.4f}, h@100:{hit_at_100:.4f}, MRR:{mrr:.4f}, av_results:{average_number_of_results:.1f}, #found:{target_found_ratio:.4f}"
 
     split_log_filename = os.path.join(experiment_directory, "performance_on_" + split + ".log")
     with open(split_log_filename, "a") as log_file:
@@ -69,59 +208,106 @@ def report_eval_performance(split, training_steps, performance_record_dict, expe
         tensorboardwriter.add_scalar("Hit@10", hit_at_10, training_steps)
         tensorboardwriter.add_scalar("Hit@100", hit_at_100, training_steps)
         tensorboardwriter.add_scalar("Target_Rank", average_rank, training_steps)
+        performance_record_dict["MRR"] = mrr
         tensorboardwriter.add_scalar("Results", average_number_of_results, training_steps)
-        tensorboardwriter.add_scalar("|Not_Found|", ingredient_not_found_counter, training_steps)
+        tensorboardwriter.add_scalar("Tar_Found", target_found_ratio, training_steps)
+        # tensorboardwriter.add_scalar("|Not_Found|", ingredient_not_found_counter, training_steps)
 
 
-def evaluate_agent(agent: Agent, substitution_dataset: BasicSubstitutionsDataset, penalize_not_found_with_rank:int = 16779):
+def get_agents_inferred_target_ingredient_ranks(agent:Agent,
+                                                substitution_examples:List[Tuple[set[URIRef],URIRef,URIRef]],
+                                                total_ingredients:int) -> Tuple[List[int], List[int], int]:
 
-    ingredient_not_found_counter: int = 0
-    hit_at_1: float = 0
-    hit_at_3: float = 0
-    hit_at_10: float = 0
-    hit_at_100: float = 0
-    target_rank_sum: int = 0
-    number_of_samples: int = 0
+    target_ingredient_ranks:list[int] = []
+    number_of_results:list[int] = []
+    ingredient_not_found_counter:int = 0
 
-    average_number_of_results: float = 0
-
-    for recipe_ingredients, original_ingredient, new_ingredient in tqdm(substitution_dataset.get_random_substitution_sample_generator()):
+    for substitution_example in substitution_examples:
+        recipe_ingredients, original_ingredient, new_ingredient = substitution_example
 
          # while example is not None
         ranked_ingredients: list[URIRef] = agent.infer_on_ingredient_substitution_query(recipe_ingredients=recipe_ingredients, original_ingredient=original_ingredient)
-        average_number_of_results += len(ranked_ingredients)
+        number_of_returned_results = len(ranked_ingredients)
+        number_of_results.append(number_of_returned_results)
+        # average_number_of_results += number_of_returned_results
         rank_of_target = calculate_rank_of_target(ranked_candidates=ranked_ingredients, target=new_ingredient)
-        number_of_samples += 1
+        # number_of_samples += 1
         if rank_of_target is None:
             ingredient_not_found_counter += 1
-            # if the ingredient is not among the retrieved candidates, then we penalize as defined. Default value equal to number of ingredients.
-            rank_of_target = penalize_not_found_with_rank
-        # else:
-        #     print(rank_of_target)
 
-        target_rank_sum += rank_of_target
-        if rank_of_target == 1:
-            hit_at_1 += 1
-            hit_at_3 += 1
-            hit_at_10 += 1
-            hit_at_100 += 1
-        elif rank_of_target <= 3:
-            hit_at_3 += 1
-            hit_at_10 += 1
-            hit_at_100 += 1
-        elif rank_of_target <= 10:
-            hit_at_10 += 1
-            hit_at_100 += 1
-        elif rank_of_target <= 100:
-            hit_at_100 += 1
+            remaining_ranks = total_ingredients - number_of_returned_results
 
-    hit_at_1 /= number_of_samples
-    hit_at_3 /= number_of_samples
-    hit_at_10 /= number_of_samples
-    hit_at_100 /= number_of_samples
-    average_number_of_results /= number_of_samples
+            # if the ingredient is not among the retrieved candidates, then we randomly assign it one of the remaining rankings.
+            # equivalent to ranking randomly the remaining / non-returned ingredients
+            random_target_rank = np.random.randint(remaining_ranks, high=None) + number_of_returned_results + 1
+            rank_of_target = random_target_rank
+        target_ingredient_ranks.append(rank_of_target)
 
-    average_rank = target_rank_sum / number_of_samples
+    return  target_ingredient_ranks, number_of_results, ingredient_not_found_counter
+
+
+def evaluate_agent(agent: Agent, substitution_dataset: BasicSubstitutionsDataset, number_of_threads:int, total_ingredients:int = 16780):
+    import datetime
+
+    start_time = datetime.datetime.now()
+
+
+    number_of_samples = substitution_dataset.get_number_of_substitution_samples_in_graph()
+
+    # average_number_of_results: float = 0
+
+    thread_inputs:List[Tuple[Agent,list, int]] = []
+
+    for i in range(number_of_threads):
+        thread_input = []
+        # thread_input.append(agent)
+        # thread_input.append([])
+        # thread_input.append(total_ingredients)
+        thread_input = (agent, [], total_ingredients)
+        thread_inputs.append(thread_input)
+
+    # substitution_examples_split_to_threads: list[list] = [[] for _ in range(number_of_threads)]
+
+    thread_index: int = 0
+    for substitution_example in substitution_dataset.get_random_substitution_sample_generator():
+        thread_inputs[thread_index][1].append(substitution_example)
+        thread_index = (thread_index + 1) % number_of_threads
+
+
+    pool = ThreadPool(number_of_threads)
+
+    results = pool.starmap(get_agents_inferred_target_ingredient_ranks, thread_inputs)
+    # results = pool.map(get_agents_inferred_target_ingredient_ranks, agent, )
+
+    pool.close()
+    pool.join()
+
+    complete_ranks_of_target = []
+    complete_number_of_results = []
+    complete_ingredient_not_found_counter = 0
+
+
+    # print(results)
+
+
+    for i in range(len(results)):
+        complete_ranks_of_target += results[i][0]
+        complete_number_of_results += results[i][1]
+        complete_ingredient_not_found_counter += results[i][2]
+
+    complete_ranks_of_target = np.asarray(complete_ranks_of_target)
+    complete_number_of_results = np.asarray(complete_number_of_results)
+    complete_ingredient_not_found_counter = np.asarray(complete_ingredient_not_found_counter)
+
+
+    hit_at_1 = np.mean(complete_ranks_of_target == 1)
+    hit_at_3 = np.mean(complete_ranks_of_target < 4)
+    hit_at_10 = np.mean(complete_ranks_of_target < 11)
+    hit_at_100 = np.mean(complete_ranks_of_target < 101)
+    average_number_of_results = np.mean(complete_number_of_results)
+    mrr = np.mean(1 / complete_ranks_of_target)
+    average_rank = np.mean(complete_ranks_of_target)
+    target_found_ratio = (number_of_samples - complete_ingredient_not_found_counter) / number_of_samples
 
     # record the performance in a dict
     performance_record_dict:dict = dict()
@@ -130,78 +316,38 @@ def evaluate_agent(agent: Agent, substitution_dataset: BasicSubstitutionsDataset
     performance_record_dict["Hit@10"] = hit_at_10
     performance_record_dict["Hit@100"] = hit_at_100
     performance_record_dict["Target_Rank"] = average_rank
+    performance_record_dict["MRR"] = mrr
     performance_record_dict["Results"] = average_number_of_results
-    performance_record_dict["|Not_Found|"] = ingredient_not_found_counter
+    performance_record_dict["Tar_Found"] = target_found_ratio
+
+
+    end_time = datetime.datetime.now()
+
+    print("Evaluation duration:", end_time - start_time)
 
     return performance_record_dict
 
-def train_agent(agent: Agent, train_dataset: TrainingDatasetActiveLearningDataset, val_dataset: BasicSubstitutionsDataset,
-                test_dataset: Optional[BasicSubstitutionsDataset], experiment_directory:str, eval_every:int, max_steps:int,
-                one_epoch: bool = False, tensorboardwriter=None, agent_asks_questions:bool=False):
+    # we also store the trained agent under the
 
-    also_eval_on_test_set:bool = test_dataset is not None
-    performance_record_on_test_set:dict[int:dict] = dict()
+def eval_and_report_agent_performance(agent, val_dataset,test_dataset,
+                                      performance_record_on_val_set, performance_record_on_test_set, training_steps,
+                                      experiment_directory, tensorboardwriter=None, number_of_threads=1) \
+        -> Tuple[Optional[dict[int,dict]], Optional[dict[int,dict]]]:
 
-    training_steps = 0
-    if agent_asks_questions:
-        ingredient_substitutions, all_recipe_ingredients, source_ingredients = train_dataset.return_all_subs_iris_recipe_ings_and_source_ings()
-        agent.receive_available_training_data(ingredient_substitutions, all_recipe_ingredients, source_ingredients)
-        agent.init_introspection()
-    else:
-        training_sample_generator = train_dataset.get_random_substitution_sample_generator()
+    if val_dataset is not None:
+        performance_record_on_val_set[training_steps] = evaluate_agent(agent, val_dataset, number_of_threads)
+        report_eval_performance(split="val", training_steps=training_steps,
+                                performance_record_dict=performance_record_on_val_set[training_steps],
+                                experiment_directory=experiment_directory, tensorboardwriter=tensorboardwriter,)
 
-    terminate:bool = False
-
-    while not terminate:
-        # calculate agent's task performance
-        performance_record_dict = evaluate_agent(agent, val_dataset)
-        report_eval_performance(split="val", training_steps=training_steps, performance_record_dict= performance_record_dict,
-                                experiment_directory=experiment_directory, tensorboardwriter=tensorboardwriter)
-        if also_eval_on_test_set:
-            performance_record_on_test_set[training_steps] = evaluate_agent(agent, test_dataset)
-
-        for _ in tqdm(range(eval_every)):
-
-            if agent_asks_questions:
-                agents_substitution_query = agent.decide_which_substitution_to_reveal_next()
-                # in case the agent has queried over the complete training data, we terminate the training
-                if agents_substitution_query is None:
-                    print("Training of one epoch was completed.")
-                    terminate = True
-                    break
-                else:
-                    selected_substitution_iri, recipe_ingredients, original_ingredient = agents_substitution_query
-                new_ingredient = train_dataset.reveal_new_ingredient_of_substitution(selected_substitution_iri)
-            else:
-                try:
-                    substitution_example = next(training_sample_generator)
-                except:
-                    if one_epoch:
-                        print("Training of one epoch was completed.")
-                        terminate = True
-                        break
-                    training_sample_generator = train_dataset.get_random_substitution_sample_generator()
-                    substitution_example = next(training_sample_generator)
-
-                recipe_ingredients, original_ingredient, new_ingredient = substitution_example
-
-
-            agent.learn_from_example(recipe_ingredients=recipe_ingredients, original_ingredient=original_ingredient, new_ingredient=new_ingredient)
-            training_steps += 1
-            if training_steps == max_steps:
-                print(f"Training reached the defined maximum number of steps ({max_steps}), and will now terminate")
-                terminate = True
-                break
-
-    # calculate agent's task performance
-    performance_record_dict = evaluate_agent(agent, val_dataset)
-    report_eval_performance(split="val", training_steps=training_steps, performance_record_dict= performance_record_dict,
-                            experiment_directory=experiment_directory, tensorboardwriter=tensorboardwriter)
-    if also_eval_on_test_set:
-        performance_record_on_test_set[training_steps] = evaluate_agent(agent, test_dataset)
+    if test_dataset is not None:
+        performance_record_on_test_set[training_steps] = evaluate_agent(agent, test_dataset, number_of_threads)
+        report_eval_performance(split="test", training_steps=training_steps,
+                                performance_record_dict=performance_record_on_test_set[training_steps],
+                                experiment_directory=experiment_directory, tensorboardwriter=None,)
         # we store the agent's test performance on the test set over time, in a pickle file
         test_performance_pickle_filename = os.path.join(experiment_directory, "test_performance.pkl")
         with open(test_performance_pickle_filename, 'wb') as handle:
             pickle.dump(performance_record_on_test_set, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    # we also store the trained agent under the
+        return performance_record_on_val_set, performance_record_on_test_set
