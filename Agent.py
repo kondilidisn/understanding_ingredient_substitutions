@@ -7,6 +7,7 @@ from collections import defaultdict
 import os
 import numpy as np
 import pickle
+import copy
 
 class Agent:
     def __init__(self, ingredient_properties: Optional[list[str]] = None, property_filters: Optional[dict[str, float]] = None,
@@ -17,7 +18,8 @@ class Agent:
                  original_ingredient_property_similarity_score_multiplier: int=0,
                  introspection_ing_freq_multiplier:float =0,
                  introspection_ing_prop_freq_multiplier:float =0,
-                 introspection_epsilon_greedy: float=0.1
+                 introspection_epsilon_greedy: float=0.1,
+                 load_ingredient_properties: bool=True
                  ):
 
         if property_filters is None:
@@ -31,7 +33,8 @@ class Agent:
         self.ingredient_knowledge:Graph = Graph()
         self.ingredient_properties_list = ingredient_properties
         self.property_filters = property_filters
-        self.load_ingredient_properties()
+        if load_ingredient_properties:
+            self.load_ingredient_properties()
 
         # learning ingredient substitution scores based on learnt property matching scores
         # property to property
@@ -86,6 +89,14 @@ class Agent:
 
         with open(save_filename, 'wb') as handle:
             pickle.dump(agent_instance_variables, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def get_copy(self):
+        other_agent = Agent(load_ingredient_properties=False)
+
+        for variable_name in self.variables_names_to_save:
+            setattr(other_agent, variable_name, copy.deepcopy(self.__getattribute__(variable_name)))
+
+        return other_agent
 
 
     def reset_agents_dynamic_knowledge(self):
