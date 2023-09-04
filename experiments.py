@@ -144,13 +144,14 @@ def train_recipe_subs(args) -> None:
 
     else:
 
-        agent.reset_agents_dynamic_knowledge()
-
         agent_performance_over_repetitions_val:list = []
         agent_performance_over_repetitions_test:list = []
 
         for repetition in range(args.repetitions):
             print(f"Running repetition {repetition + 1}, out of {args.repetitions}.")
+
+            agent.reset_agents_dynamic_knowledge()
+
             iter_exp_dir = os.path.join(experiment_directory, str(repetition))
             os.mkdir(iter_exp_dir)
 
