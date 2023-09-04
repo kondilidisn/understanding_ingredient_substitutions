@@ -1,3 +1,4 @@
+import copy
 import os.path
 from typing import Optional, Tuple, Generator, List
 from Agent import Agent
@@ -10,6 +11,7 @@ import shutil
 from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 # from multiprocessing.dummy import Pool as ThreadPool
+from copy import deepcopy
 
 
 
@@ -26,10 +28,8 @@ def aggregate_agent_performance_over_exp_repetitions(agent_performance:list[dict
             for repetition in range(len(agent_performance)):
                 aggregated_metric_performance_list.append(agent_performance[repetition][training_step][metric])
             np_array = np.asarray(aggregated_metric_performance_list)
-            av_metric_step_performance = np.mean(np_array)
-            agent_av_performance[training_step][metric] = av_metric_step_performance
-            std_metric_step_performance = np.std(np_array)
-            agent_std_performance[training_step][metric] = std_metric_step_performance
+            agent_av_performance[training_step][metric] = np.mean(np_array)
+            agent_std_performance[training_step][metric] = np.std(np_array)
 
     return agent_av_performance, agent_std_performance
 
@@ -222,11 +222,13 @@ def get_agents_inferred_target_ingredient_ranks(agent:Agent,
     number_of_results:list[int] = []
     ingredient_not_found_counter:int = 0
 
+    agent_copy = deepcopy(agent)
+
     for substitution_example in substitution_examples:
         recipe_ingredients, original_ingredient, new_ingredient = substitution_example
 
          # while example is not None
-        ranked_ingredients: list[URIRef] = agent.infer_on_ingredient_substitution_query(recipe_ingredients=recipe_ingredients, original_ingredient=original_ingredient)
+        ranked_ingredients: list[URIRef] = agent_copy.infer_on_ingredient_substitution_query(recipe_ingredients=recipe_ingredients, original_ingredient=original_ingredient)
         number_of_returned_results = len(ranked_ingredients)
         number_of_results.append(number_of_returned_results)
         # average_number_of_results += number_of_returned_results
