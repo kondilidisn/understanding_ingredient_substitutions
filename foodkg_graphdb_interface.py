@@ -427,6 +427,21 @@ class FoodKGGraphDBInterface:
         self.run_out_of_memory_just_now = False
         return results
 
+    def get_rdfs_label_of_iri(self, iri: URIRef) -> Optional[str]:
+
+        sparql_query_for_rdfs_label = """
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    select ?rdfs_label where { 
+    <""" + str(iri) + "> rdfs:label ?rdfs_label.}"
+        query_result = self.run_sparql_query(sparql_query_for_rdfs_label)
+
+        iri_name: Optional[str] = None
+
+        for result in query_result["results"]["bindings"]:
+            iri_name = result["rdfs_label"]["value"]
+
+        return iri_name
+
     def get_full_ingredient_iri_given_short_iri(self, short_iri):
         return self.ingredient_iri_prefix + short_iri
 

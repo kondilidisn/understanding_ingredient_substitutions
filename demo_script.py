@@ -1,9 +1,12 @@
 from Agent import Agent
 import os
 from rdflib import Graph, Namespace, URIRef
-from typing import Tuple
+from typing import Tuple, Optional, Union
 import argparse
 from collections import defaultdict
+
+from foodkg_graphdb_interface import FoodKGGraphDBInterface
+
 
 def remove_ingredient_prefix(ingredient_iri: URIRef) -> str:
     prefix = "http://idea.rpi.edu/heals/kb/ingredientname/"
@@ -97,6 +100,35 @@ def print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent:Agent, re
 
     return all_ingredient_substitution_suggestions_and_scores
 
+def optionally_translate_iri_to_name(iri:Union[URIRef,str], foodkg_graphdb_interface:Optional[FoodKGGraphDBInterface]) -> str:
+    if foodkg_graphdb_interface is not None:
+        iri_rdfs_label = foodkg_graphdb_interface.get_rdfs_label_of_iri(iri)
+        if iri_rdfs_label is not None:
+            return iri_rdfs_label
+    return str(iri)
+
+def justify_specific_ingredient_substitution(agent:Agent, recipe_ingredients: set[URIRef], original_ingredient:URIRef, new_ingredient:URIRef,
+                                             foodkg_graphdb_interface:Optional[FoodKGGraphDBInterface]=None) -> None:
+    relevant_observations = agent.justify_ingredient_substitution_recommendation(recipe_ingredients, original_ingredient, new_ingredient)
+    print(f"---------   Justifications on replacing: {original_ingredient}\n with: {new_ingredient}")
+    print("-- Related Ingredient to Ingredient Observations")
+    print(relevant_observations["ing2ing"])
+    print()
+    print("-- Related Ingredient Property to Ingredient Property Observations")
+    for original_ingredient_property in relevant_observations["ing_prop2ing_prop"]:
+        print(optionally_translate_iri_to_name(original_ingredient_property, foodkg_graphdb_interface) + " ->")
+        for new_ingredient_property in relevant_observations["ing_prop2ing_prop"][original_ingredient_property]:
+            print(optionally_translate_iri_to_name(new_ingredient_property, foodkg_graphdb_interface),
+                  relevant_observations["ing_prop2ing_prop"][original_ingredient_property][new_ingredient_property] )
+
+    print()
+    print("-- Related Recipe Property to Ingredient Property Observations")
+    for recipe_property in relevant_observations["rec_prop2ing_prop"]:
+        print(optionally_translate_iri_to_name(recipe_property, foodkg_graphdb_interface) + " ->")
+        for new_ingredient_property in relevant_observations["rec_prop2ing_prop"][recipe_property]:
+            print("\t", optionally_translate_iri_to_name(new_ingredient_property, foodkg_graphdb_interface),
+                  relevant_observations["rec_prop2ing_prop"][recipe_property][
+                      new_ingredient_property])
 
 
 if __name__ == '__main__':
@@ -106,7 +138,7 @@ if __name__ == '__main__':
     parser.add_argument("--learning", default="HC", type=str, help='["HC", "LT+Freq"]')
     parser.add_argument("--AL", default="AL", type=str, help='["AL", "PL"]')
     parser.add_argument("--demo_dir", default="Demo", type=str)
-    parser.add_argument("--k", default=1, type=int, help='Number of substitutions to suggest per ingredient')
+    parser.add_argument("--k", default=10, type=int, help='Number of substitutions to suggest per ingredient')
     parser.add_argument("--show_scores", action="store_true", help="Show recommendation scores")
 
     args = parser.parse_args()
@@ -166,7 +198,25 @@ if __name__ == '__main__':
 
     demo_recipe_ingredients = get_demo_recipe_ingredients()
 
-    print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent, demo_recipe_ingredients, k=args.k, show_scores=args.show_scores)
+
+
+    # infer ingredient substitution recommendations
+    # print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent, demo_recipe_ingredients, k=args.k, show_scores=args.show_scores)
+
+    # justify specific ingredient substitutions
+# python3 demo_script.py > Demo/ing2ing=100__ingP2ingP=10__recP2ingP=1__ing_perception=foodOn_foodOn_one_hop__introspection_epsilon_greedy_0.1_ing_10.0_ing_prop_1.0__max_steps_100/justified_ingredient_recommendations.txt
+    original_ingredient_iri = URIRef("http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract")
+    new_ingredient_short_iris = [URIRef("http://idea.rpi.edu/heals/kb/ingredientname/coconut%20oil"), URIRef("http://idea.rpi.edu/heals/kb/ingredientname/chopped%20coconut")]
+
+    foodkg_graphdb_interface = FoodKGGraphDBInterface(load_ingredient_indexes_from_files=True)
+
+    # foodkg_graphdb_interface.get_rdfs_label_of_iri(URIRef("http://purl.obolibrary.org/obo/FOODON_03414810"))
+
+
+    for new_ingredient_short_iri in new_ingredient_short_iris:
+        justify_specific_ingredient_substitution(agent, demo_recipe_ingredients, original_ingredient_iri, new_ingredient_short_iri, foodkg_graphdb_interface=foodkg_graphdb_interface)
+        print()
+
 
 
 #
