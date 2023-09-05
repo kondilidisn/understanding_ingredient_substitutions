@@ -71,7 +71,7 @@ def get_demo_recipe_ingredients() -> set[URIRef]:
 
     return demo_recipe_ingredients
 
-def get_top_k_suggested_substitutions_per_ingredient_of_recipe(agent:Agent, recipe_ingredients:set[URIRef], k:int=10, show_scores:bool=False) -> dict[URIRef,list[tuple[URIRef,float]]]:
+def print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent:Agent, recipe_ingredients:set[URIRef], k:int=10, show_scores:bool=False) -> dict[URIRef, list[tuple[URIRef, float]]]:
 
     print("The recipe consists of the following ingredients:")
     for original_ingredient in recipe_ingredients:
@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
     demo_recipe_ingredients = get_demo_recipe_ingredients()
 
-    get_top_k_suggested_substitutions_per_ingredient_of_recipe(agent, demo_recipe_ingredients, k=args.k, show_scores=args.show_scores)
+    print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent, demo_recipe_ingredients, k=args.k, show_scores=args.show_scores)
 
 
 #
