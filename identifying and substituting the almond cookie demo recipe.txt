@@ -1,0 +1,248 @@
+
+https://gitlab.ai.vub.ac.be/ehai/babel/-/blob/development/applications/muhai-cookingbot/recipe-annotations/almond-crescent-cookies-3.lisp
+
+;; "120 grams salted butter, at room temperature" <recipe-kb:ingredientname/salted%20butter>
+    (fetch-and-proportion ?proportioned-butter ?ks-with-butter ?kitchen ?target-container-1 salted-butter 120 g)
+    (bring-to-temperature ?warm-butter ?ks-with-warm-butter ?ks-with-butter ?proportioned-butter ?room-temp-qty ?room-temp-unit)
+    
+;; "40 grams confectioners' sugar, plus 30 grams extra for dusting" <recipe-kb:ingredientname/powdered%20sugar>
+    (fetch-and-proportion ?proportioned-sugar ?ks-with-sugar ?ks-with-warm-butter ?target-container-2 powdered-white-sugar 40 g)
+    (fetch-and-proportion ?proportioned-dusting-sugar ?ks-with-dusting-sugar ?ks-with-sugar ?target-container-3 powdered-white-sugar 30 g)
+    
+;; "1 teaspoon vanilla extract" <recipe-kb:ingredientname/vanilla%20extract>
+    (fetch-and-proportion ?proportioned-vanilla ?ks-with-vanilla ?ks-with-dusting-sugar ?target-container-4 vanilla-extract 1 teaspoon)
+    
+;; "1 teaspoon almond extract" <recipe-kb:ingredientname/almond%20extract>
+    (fetch-and-proportion ?proportioned-almond-extract ?ks-with-almond ?ks-with-vanilla ?target-container-5 almond-extract 1 teaspoon)
+
+;; "1/8 teaspoon salt" <recipe-kb:ingredientname/salt>
+    (fetch-and-proportion ?proportioned-salt ?ks-with-salt ?ks-with-almond ?target-container-6 salt 0.125 teaspoon)
+        
+;; "90 grams all-purpose flour, sifted"  <recipe-kb:ingredientname/all%20-%20purpose%20flour>
+    (fetch-and-proportion ?proportioned-flour ?ks-with-flour ?ks-with-salt ?target-container-7 all-purpose-flour 90 g)
+    (sift ?sifted-flour ?ks-with-sifted-flour ?ks-with-flour ?large-bowl ?proportioned-flour ?sifting-tool)
+
+similar almond cookie recipes found in the substitution dataset that we currently use (~80%)
+
+The same recipe represented in IRIs.
+(ns1 = "http://lr.cs.vu.nl/ingredient_substitutions#")
+<http://idea.rpi.edu/heals/kb/recipe/demo_almond_cookies> ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/salted%20butter>,
+<http://idea.rpi.edu/heals/kb/ingredientname/powdered%20sugar>,
+<http://idea.rpi.edu/heals/kb/ingredientname/vanilla%20extract>,
+<http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract>,
+<http://idea.rpi.edu/heals/kb/ingredientname/salt>,
+<http://idea.rpi.edu/heals/kb/ingredientname/all%20-%20purpose%20flour> .
+
+
+
+-------------------------------------------------------------------------------------------------------------- train:
+
+closest recipe found in our dataset to represent the example of the almond cookies recipe:
+
+(Derived from http://www.food.com/recipe/chinese-almond-cookies-329688)
+
+<http://idea.rpi.edu/heals/kb/recipe/1756d0be-Chinese%20Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9ef8465021/0> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almonds>,
+    "almonds"
+
+        <http://idea.rpi.edu/heals/kb/ingredientname/brown%20sugar>,
+        "brown sugar"
+
+        FoodKG authors say that it is equivalent with brown prawn .... http://purl.obolibrary.org/obo/FOODON_03413492
+
+
+        <http://idea.rpi.edu/heals/kb/ingredientname/butter>,
+        http://purl.obolibrary.org/obo/FOODON_03310351
+        subclassOf obo:FOODON_00001772     rdfs:label "cow milk butter food product"
+        which is subclass of the two following  obo:FOODON_00001118 rdfs:label "cattle dairy food product"@en 
+            and obo:FOODON_00001257 rdfs:label "milk or milk based food product"@en
+        also subclass of obo:FOODON_00004242     rdfs:label       "animal food product"@en
+
+
+
+        <http://idea.rpi.edu/heals/kb/ingredientname/rice%20flour>,
+        "rice flour"
+        foodOn equivalent :
+            obo:FOODON_00003353    rdfs:label    "glutinous rice flour"@en
+            which is subclass of the two following :
+                obo:FOODON_00002207     rdfs:label       "rice flour food product"@en
+                and obo:FOODON_03307561    rdfs:label    "glutinous rice food product"@en
+                    the latter is a subclass of obo:FOODON_00001185    rdfs:label    "rice food product"@en
+
+        <http://idea.rpi.edu/heals/kb/ingredientname/roasted%20almonds> .
+        "roasted almonds"
+        FoodOn equivalent obo:FOODON_03311763    rdfs:label    "roasted chicory beverage"@en
+        which is subclass of the two following 
+        obo:FOODON_03301444    rdfs:label    "vegetable juice food product"@en
+        obo:FOODON_00002275    rdfs:label    "steeped beverage product"@en
+        also subclass of:
+        obo:FOODON_00001015    rdfs:label    "plant food product"@en
+
+
+<http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9ef8465021/0> ns1:new_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/sorghum%20flour> ;
+    ns1:original_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/rice%20flour> .
+
+    sorghum  :
+    foodOn equivalent : http://purl.obolibrary.org/obo/FOODON_00001002
+    subclass of obo:FOODON_00001093    rdfs:label    "cereal grain food product"@en
+
+
+
+From google: "Sorghum flour is a gluten-free flour with a mild, sweet flavor and smooth texture. It's commonly used to make gluten free cakes, ..."
+
+
+
+
+
+<http://idea.rpi.edu/heals/kb/recipe/0b63a97b-Low%20Carb%20Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9b2dbcaf88/0>,
+        <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9b2dbcaf88/2> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almond%20flour>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/artificial%20sweetener>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/baking%20powder>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/butter>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/egg%20whites>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/flax%20seed%20meal>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/walnuts> .
+
+
+<http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9b2dbcaf88/0> ns1:new_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/egg%20white> ;
+    ns1:original_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/butter> .
+
+
+<http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9b2dbcaf88/1> ns1:new_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/salted%20butter> ;
+    ns1:original_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/egg> .
+
+
+<http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9b2dbcaf88/2> ns1:new_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/cookie> ;
+    ns1:original_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/butter> .
+    
+<http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9b2dbcaf88/3> ns1:new_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/praline> ;
+    ns1:original_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract> .
+
+
+
+
+
+
+<http://idea.rpi.edu/heals/kb/recipe/9dc15cec-Sweet%20%26%20Salty%20Chocolate%20Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/223ac9bcfa/0> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/baking%20powder>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/baking%20soda>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/brown%20sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/coarse%20salt>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/egg>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/flour>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/milk%20chocolate%20chips>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/soft%20margarine>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/vanilla>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/white%20sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/whole%20almonds> .
+
+
+
+<http://idea.rpi.edu/heals/kb/recipe/b498bbaf-Poppy%20Seed-Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/62d834d6ac/0> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/all%20-%20purpose%20flour>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/baking%20soda>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/egg>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/egg%20white>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/light%20corn%20syrup>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/margarine>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/poppy%20seeds>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/vegetable%20oil%20cooking%20spray> .
+
+
+<http://idea.rpi.edu/heals/kb/recipe/db469ecb-Oatmeal-Cranberry-Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/e48576eaf4/0> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almonds>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/baking%20soda>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/brown%20sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/dried%20cranberries>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/eggs>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/flour>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/oatmeal>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/salt>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/unsalted%20butter>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/vanilla> .
+
+
+
+<http://idea.rpi.edu/heals/kb/recipe/f2eeb539-Heavenly%20Raspberry%20Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/9533845725/0> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/baking%20powder>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/egg>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/light%20brown%20sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/powdered%20sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/raspberry%20jam>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/toasted%20sliced%20almonds>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/unsalted%20butter>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/vanilla%20extract>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/white%20flour> .
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------- validation:
+
+<http://idea.rpi.edu/heals/kb/recipe/0082a3e7-Chinese%20Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/840a4dd8b9/0> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/almond%20halves>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/almonds>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/baking%20powder>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/egg%20yolk>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/eggs>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/flour>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/lard>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/water> .
+
+
+<http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/840a4dd8b9/0> ns1:new_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/batter> ;
+    ns1:original_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/eggs> .
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------- test:
+
+<http://idea.rpi.edu/heals/kb/recipe/0082a3e7-Chinese%20Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/0c21961dde/0> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/almond%20halves>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/almonds>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/baking%20powder>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/egg%20yolk>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/eggs>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/flour>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/lard>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/water> .
+
+
+<http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/0c21961dde/0> ns1:new_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/coconut%20extract> ;
+    ns1:original_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract> .
+
+
+
+
+<http://idea.rpi.edu/heals/kb/recipe/1cb6622e-Flourless%20Chocolate%20Chip%20Almond%20Cookies> ns1:has_suggested_substitution <http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/0350b44d1e/0> ;
+    ns1:uses_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/almond%20meal>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/baking%20soda>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/chocolate%20chips>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/egg>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/sugar>,
+        <http://idea.rpi.edu/heals/kb/ingredientname/vanilla%20extract> .
+
+
+<http://lr.cs.vu.nl/ingredient_substitutions#substitution_suggestion/0350b44d1e/0> ns1:new_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/coconut> ;
+    ns1:original_ingredient <http://idea.rpi.edu/heals/kb/ingredientname/sugar> .
+
+
+
+

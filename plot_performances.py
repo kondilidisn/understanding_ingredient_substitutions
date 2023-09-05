@@ -46,10 +46,15 @@ legend_2_exp_dir = {
     "HC - PL": "ing2ing=100__ingP2ingP=10__recP2ingP=1__ing_perception=foodOn_foodOn_one_hop__introspection_random__max_steps_100",
     "HC - AL": "ing2ing=100__ingP2ingP=10__recP2ingP=1__ing_perception=foodOn_foodOn_one_hop__introspection_epsilon_greedy_0.1_ing_10.0_ing_prop_1.0__max_steps_100"}
 #
+
+
+
+
+
 # max_steps = 100
 max_steps = 100
-steps = [i for i in list(range(max_steps))]
-steps.append(max_steps)
+# steps = [i for i in list(range(max_steps))]
+# steps.append(max_steps)
 
 steps_to_plot = set()
 

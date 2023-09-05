@@ -1,0 +1,81 @@
+The recipe consists of the following ingredients:
+salt
+salted%20butter
+all%20-%20purpose%20flour
+almond%20extract
+vanilla%20extract
+powdered%20sugar
+
+Ingredients Substitution Suggestions per ingredient:
+-Original-  salt:
+allspice 180.0
+celery%20salt 175.0
+ground%20allspice 80.0
+powdered%20allspice 80.0
+whole%20allspice 80.0
+celery%20seeds 75.0
+celery%20leaves 75.0
+pumpkin%20pie%20spice 75.0
+organic%20celery 75.0
+dehydrated%20celery 75.0
+
+-Original-  salted%20butter:
+pumpkin%20spice%20syrup 57.0
+pumpkin%20spice 57.0
+pumpkin%20pie%20spice 57.0
+pumpkin%20pie%20filling 57.0
+pumpkin%20pie 57.0
+leaf%20lard 56.0
+freshly%20rendered%20lard 56.0
+lard 56.0
+powdered%20allspice 51.0
+whole%20allspice 51.0
+
+-Original-  all%20-%20purpose%20flour:
+whole%20wheat%20ravioli 109.0
+whole%20wheat%20macaroni 109.0
+white%20whole%20wheat%20flour 109.0
+whole%20wheat%20panko 109.0
+whole%20wheat%20rolls 109.0
+frozen%20whole%20wheat%20bread%20dough 109.0
+whole%20wheat%20spaghetti 109.0
+whole%20wheat%20sourdough%20bread 109.0
+fine%20whole%20wheat%20bread%20crumbs 109.0
+low%20-%20carb%20whole%20wheat%20tortillas 109.0
+
+-Original-  almond%20extract:
+pumpkin%20spice%20syrup 60.0
+pumpkin%20spice 60.0
+pumpkin%20pie%20spice 60.0
+pumpkin%20pie%20filling 60.0
+pumpkin%20pie 60.0
+powdered%20allspice 51.0
+whole%20allspice 51.0
+ground%20allspice 51.0
+allspice 51.0
+egg%20white%20substitute 50.0
+
+-Original-  vanilla%20extract:
+white%20potatoes 124.0
+white%20cornmeal 124.0
+white%20peppercorns 124.0
+NESTLE%20TOLL%20HOUSE%20Premier%20White%20Morsels 124.0
+white%20sultana%20raisins 124.0
+leek%20white 124.0
+homemade%20type%20white%20bread 124.0
+fine%20dry%20white%20bread%20crumbs 124.0
+white%20sandwich%20cookies 124.0
+white%20cupcake 124.0
+
+-Original-  powdered%20sugar:
+white%20potatoes 212.0
+white%20cornmeal 212.0
+white%20peppercorns 212.0
+NESTLE%20TOLL%20HOUSE%20Premier%20White%20Morsels 212.0
+white%20sultana%20raisins 212.0
+leek%20white 212.0
+homemade%20type%20white%20bread 212.0
+fine%20dry%20white%20bread%20crumbs 212.0
+white%20sandwich%20cookies 212.0
+white%20cupcake 212.0
+

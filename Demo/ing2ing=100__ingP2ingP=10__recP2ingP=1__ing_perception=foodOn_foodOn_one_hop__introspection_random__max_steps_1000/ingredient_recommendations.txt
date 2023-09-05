@@ -1,0 +1,81 @@
+The recipe consists of the following ingredients:
+salt
+almond%20extract
+powdered%20sugar
+salted%20butter
+vanilla%20extract
+all%20-%20purpose%20flour
+
+Ingredients Substitution Suggestions per ingredient:
+-Original-  salt:
+garlic%20salt 674.0
+celery%20salt 534.0
+allspice 290.0
+frying%20oil 286.0
+soya%20oil 286.0
+coconut%20biscuits 286.0
+sweetened%20coconut 286.0
+wasabi%20oil 286.0
+atsuete%20oil 286.0
+creamed%20coconut 286.0
+
+-Original-  almond%20extract:
+frying%20oil 324.0
+soya%20oil 324.0
+coconut%20biscuits 324.0
+sweetened%20coconut 324.0
+wasabi%20oil 324.0
+atsuete%20oil 324.0
+creamed%20coconut 324.0
+Grapefruit%20Oil 324.0
+coconut%20sorbet 324.0
+oil%20-%20free%20Italian%20dressing 324.0
+
+-Original-  powdered%20sugar:
+sugar%20-%20free%20honey 1212.0
+honey%20barbeque%20sauce 1212.0
+honey%20graham%20crackers 1212.0
+honey%20roasted%20peanuts 1212.0
+Healthy%20Choice%20honey%20-%20roasted%20ham 1212.0
+honey%20liqueur 1212.0
+honey%20mustard%20dressing 1212.0
+lavender%20honey 1212.0
+honey%20-%20roasted%20ham 1212.0
+honey%20-%20wheat%20bread 1212.0
+
+-Original-  salted%20butter:
+frying%20oil 561.0
+soya%20oil 561.0
+coconut%20biscuits 561.0
+sweetened%20coconut 561.0
+wasabi%20oil 561.0
+atsuete%20oil 561.0
+creamed%20coconut 561.0
+Grapefruit%20Oil 561.0
+coconut%20sorbet 561.0
+oil%20-%20free%20Italian%20dressing 561.0
+
+-Original-  vanilla%20extract:
+sugar%20-%20free%20honey 662.0
+honey%20barbeque%20sauce 662.0
+honey%20graham%20crackers 662.0
+honey%20roasted%20peanuts 662.0
+Healthy%20Choice%20honey%20-%20roasted%20ham 662.0
+honey%20liqueur 662.0
+honey%20mustard%20dressing 662.0
+lavender%20honey 662.0
+honey%20-%20roasted%20ham 662.0
+honey%20-%20wheat%20bread 662.0
+
+-Original-  all%20-%20purpose%20flour:
+whole%20wheat%20bow%20tie%20pasta 665.0
+whole%20wheat%20macaroni 665.0
+fine%20whole%20wheat%20bread%20crumbs 665.0
+whole%20wheat%20sandwich%20wraps 665.0
+8%20-%20inch%20whole%20wheat%20flour%20tortillas 665.0
+fresh%20whole%20wheat%20breadcrumbs 665.0
+small%20whole%20wheat%20pasta%20shells 665.0
+garlic%20and%20basil%20whole%20wheat%20couscous 665.0
+whole%20wheat%20matzo 665.0
+whole%20wheat%20orzo 665.0
+

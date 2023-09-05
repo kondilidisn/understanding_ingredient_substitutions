@@ -1,0 +1,69 @@
+The recipe consists of the following ingredients:
+salted%20butter
+almond%20extract
+all%20-%20purpose%20flour
+vanilla%20extract
+powdered%20sugar
+salt
+
+Ingredients Substitution Suggestions per ingredient:
+-Original-  salted%20butter:
+olive%20oil 2.0
+reduced%20fat%20margarine 1.0
+margarine 1.0
+cream%20cheese 1.0
+Crisco 1.0
+grapeseed%20oil 1.0
+canola%20oil 1.0
+stick 1.0
+
+-Original-  almond%20extract:
+vanilla%20extract 37.0
+lemon%20extract 11.0
+coconut%20extract 5.0
+peppermint%20extract 3.0
+rum%20extract 3.0
+Amaretto 3.0
+mint%20extract 2.0
+orange%20extract 2.0
+lemon%20juice 2.0
+banana%20extract 2.0
+
+-Original-  all%20-%20purpose%20flour:
+
+-Original-  vanilla%20extract:
+almond%20extract 51.0
+lemon%20extract 10.0
+coconut%20extract 9.0
+peppermint%20extract 8.0
+orange%20extract 7.0
+almond%20flavoring 6.0
+vanilla%20bean 6.0
+maple%20extract 6.0
+mint%20extract 5.0
+lemon%20juice 5.0
+
+-Original-  powdered%20sugar:
+brown%20sugar 6.0
+glaze 5.0
+frosting 4.0
+icing%20sugar 3.0
+honey 3.0
+chocolate 2.0
+granulated%20sugar 2.0
+syrup 2.0
+vanilla%20sugar 2.0
+cinnamon%20sugar 2.0
+
+-Original-  salt:
+garlic%20salt 78.0
+seasoning%20salt 31.0
+seasoning 24.0
+sea%20salt 19.0
+celery%20salt 14.0
+garlic%20powder 12.0
+soy%20sauce 9.0
+olive%20oil 8.0
+kosher%20salt 7.0
+onion%20salt 7.0
+

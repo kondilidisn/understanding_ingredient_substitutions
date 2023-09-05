@@ -1,0 +1,81 @@
+The recipe consists of the following ingredients:
+powdered%20sugar
+salted%20butter
+almond%20extract
+all%20-%20purpose%20flour
+salt
+vanilla%20extract
+
+Ingredients Substitution Suggestions per ingredient:
+-Original-  powdered%20sugar:
+light%20honey%20-%20wheat%20bread 1254.0
+thyme%20honey 1254.0
+honey%20liqueur 1254.0
+Grey%20Poupon%20honey%20mustard 1254.0
+creamed%20honey 1254.0
+honey%20garlic%20sauce 1254.0
+sugar%20-%20free%20honey 1254.0
+99%25%20fat%20-%20free%20honey%20soy%20dressing 1254.0
+honey%20barbeque%20sauce 1254.0
+honey%20teriyaki%20sauce 1254.0
+
+-Original-  salted%20butter:
+organic%20virgin%20coconut%20oil 680.0
+shredded%20coconut 680.0
+coconut%20cookie 680.0
+chopped%20coconut 680.0
+atsuete%20oil 680.0
+white%20truffle%20oil 680.0
+mineral%20oil 680.0
+hot%20curry%20oil 680.0
+Smuckers%20baking%20healthy%20oil%20%26%20shortening 680.0
+oil%20-%20cured%20black%20olives 680.0
+
+-Original-  almond%20extract:
+vanilla%20extract 488.0
+vanilla%20sugar 289.0
+pure%20vanilla%20extract 288.0
+vanilla%20rum%20extract 288.0
+real%20vanilla%20extract 288.0
+organic%20virgin%20coconut%20oil 235.0
+shredded%20coconut 235.0
+coconut%20cookie 235.0
+chopped%20coconut 235.0
+atsuete%20oil 235.0
+
+-Original-  all%20-%20purpose%20flour:
+whole%20wheat%20dinner%20rolls 391.0
+whole%20wheat%20sourdough%20bread 391.0
+low%20-%20fat%20low%20-%20carb%20whole%20wheat%20tortillas 391.0
+whole%20wheat%20hoagie%20rolls 391.0
+8%20-%20inch%20whole%20wheat%20flour%20tortillas 391.0
+whole%20wheat%20frankfurter%20buns 391.0
+whole%20wheat%20English%20muffins 391.0
+mini%20whole%20wheat%20pita%20bread 391.0
+light%20whole%20wheat%20bread 391.0
+whole%20wheat%20rigatoni 391.0
+
+-Original-  salt:
+garlic%20salt 240.0
+garlic%20powder 229.0
+garlic 223.0
+organic%20virgin%20coconut%20oil 193.0
+shredded%20coconut 193.0
+coconut%20cookie 193.0
+chopped%20coconut 193.0
+atsuete%20oil 193.0
+white%20truffle%20oil 193.0
+mineral%20oil 193.0
+
+-Original-  vanilla%20extract:
+light%20honey%20-%20wheat%20bread 687.0
+thyme%20honey 687.0
+honey%20liqueur 687.0
+Grey%20Poupon%20honey%20mustard 687.0
+creamed%20honey 687.0
+honey%20garlic%20sauce 687.0
+sugar%20-%20free%20honey 687.0
+99%25%20fat%20-%20free%20honey%20soy%20dressing 687.0
+honey%20barbeque%20sauce 687.0
+honey%20teriyaki%20sauce 687.0
+

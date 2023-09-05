@@ -1,0 +1,81 @@
+The recipe consists of the following ingredients:
+powdered%20sugar
+salt
+almond%20extract
+salted%20butter
+all%20-%20purpose%20flour
+vanilla%20extract
+
+Ingredients Substitution Suggestions per ingredient:
+-Original-  powdered%20sugar:
+Nature%20Valley%20oats%20%27n%20honey%20cereal 29042.0
+honey%20-%20wheat%20bread 29042.0
+honey%20roasted%20peanuts 29042.0
+honey%20wheat%20braided%20pretzels 29042.0
+Honey%20Graham%20cereal 29042.0
+fat%20-%20free%20honey%20-%20dijon%20salad%20dressing 29042.0
+honey%20lime%20dressing 29042.0
+low%20-%20fat%20honey%20graham%20crackers 29042.0
+honey%20-%20wheat%20bagel 29042.0
+Teddy%20Grahams%20honey%20graham%20snacks 29042.0
+
+-Original-  salt:
+coconut%20oil 10099.0
+coconut%20cookie 9899.0
+sweetened%20coconut 9899.0
+creamed%20coconut 9899.0
+coconut%20gel 9899.0
+pine%20oil 9899.0
+coconut 9899.0
+wok%20oil 9899.0
+dry%20coconut%20powder 9899.0
+ylang%20ylang%20oil 9899.0
+
+-Original-  almond%20extract:
+coconut%20essence 11613.0
+coconut%20cookie 11513.0
+sweetened%20coconut 11513.0
+creamed%20coconut 11513.0
+coconut%20gel 11513.0
+pine%20oil 11513.0
+coconut 11513.0
+wok%20oil 11513.0
+dry%20coconut%20powder 11513.0
+ylang%20ylang%20oil 11513.0
+
+-Original-  salted%20butter:
+coconut%20cookie 21505.0
+sweetened%20coconut 21505.0
+creamed%20coconut 21505.0
+coconut%20gel 21505.0
+pine%20oil 21505.0
+coconut 21505.0
+wok%20oil 21505.0
+dry%20coconut%20powder 21505.0
+ylang%20ylang%20oil 21505.0
+oil%20-%20free%20Italian%20dressing 21505.0
+
+-Original-  all%20-%20purpose%20flour:
+whole%20wheat%20English%20muffin 8847.0
+whole%20wheat%20bread 8847.0
+whole%20wheat%20linguine 8847.0
+flax%20seed%20whole%20wheat%20tortillas 8847.0
+no%20-%20boil%20whole%20wheat%20lasagna%20noodles 8847.0
+whole%20wheat%20egg%20noodles 8847.0
+whole%20wheat%20fettuccine 8847.0
+whole%20wheat%20spaghetti 8847.0
+whole%20wheat%20sandwich%20loaf 8847.0
+organic%20whole%20wheat%20flour 8847.0
+
+-Original-  vanilla%20extract:
+Nature%20Valley%20oats%20%27n%20honey%20cereal 16019.0
+honey%20-%20wheat%20bread 16019.0
+honey%20roasted%20peanuts 16019.0
+honey%20wheat%20braided%20pretzels 16019.0
+Honey%20Graham%20cereal 16019.0
+fat%20-%20free%20honey%20-%20dijon%20salad%20dressing 16019.0
+honey%20lime%20dressing 16019.0
+low%20-%20fat%20honey%20graham%20crackers 16019.0
+honey%20-%20wheat%20bagel 16019.0
+Teddy%20Grahams%20honey%20graham%20snacks 16019.0
+

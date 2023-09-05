@@ -1,6 +1,6 @@
 import math
 from math import floor
-from typing import Optional, Generator, Set, Tuple, List
+from typing import Optional, Generator, Set, Tuple, List, Union
 from rdflib import Graph, Namespace, URIRef, RDF, OWL
 from utils import *
 from collections import defaultdict
@@ -75,7 +75,7 @@ class Agent:
                                      "introspection_ing_prop_freq_multiplier",
                                      "introspection_epsilon_greedy"]
 
-    def load_agent(self, load_filename):
+    def load_agent(self, load_filename) -> None:
         with open(load_filename, 'rb') as handle:
             agent_instance_variables: dict = pickle.load(handle)
 
@@ -276,6 +276,7 @@ class Agent:
             if exclude_ingredient is not None and ingredient == exclude_ingredient:
                 continue
             ingredient_properties = self.perceive_ingredient(ingredient)
+            # print(ingredient_properties)
             # add ingredient properties to the set of recipe properties
             recipe_properties.update(ingredient_properties)
         return recipe_properties
@@ -328,7 +329,8 @@ class Agent:
             self.ingredient_to_ingredient_substitution_counter[original_ingredient][new_ingredient] += 1
 
     # infer
-    def infer_on_ingredient_substitution_query(self, recipe_ingredients: set[URIRef], original_ingredient: URIRef) -> list[URIRef]:
+    def infer_on_ingredient_substitution_query(self, recipe_ingredients: set[URIRef], original_ingredient: URIRef,
+                                               return_scores:bool=False) -> list[Union[URIRef, Tuple[URIRef, float]]]:
 
         recipe_properties = self.perceive_recipe(recipe_ingredients, exclude_ingredient=original_ingredient)
         original_ingredient_properties = self.perceive_ingredient(original_ingredient)
@@ -386,6 +388,10 @@ class Agent:
         # print(len(candidate_ingredient_scores))
         ranked_ingredient_candidates_and_scores = [(ingredient_iri, candidate_ingredient_scores[ingredient_iri]) for ingredient_iri in candidate_ingredient_scores]
         ranked_ingredient_candidates_and_scores.sort(reverse=True, key=lambda x: x[1])
+
+        if return_scores:
+            return ranked_ingredient_candidates_and_scores
+
         ranked_ingredient_candidates = [ingredient_iri for ingredient_iri, _ in ranked_ingredient_candidates_and_scores]
 
         return ranked_ingredient_candidates

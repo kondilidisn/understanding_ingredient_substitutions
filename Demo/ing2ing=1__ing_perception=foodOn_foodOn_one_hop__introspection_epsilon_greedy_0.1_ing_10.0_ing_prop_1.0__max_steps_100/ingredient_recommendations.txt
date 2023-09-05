@@ -1,0 +1,25 @@
+The recipe consists of the following ingredients:
+all%20-%20purpose%20flour
+vanilla%20extract
+salted%20butter
+almond%20extract
+salt
+powdered%20sugar
+
+Ingredients Substitution Suggestions per ingredient:
+-Original-  all%20-%20purpose%20flour:
+
+-Original-  vanilla%20extract:
+vanilla%20powder 1.0
+
+-Original-  salted%20butter:
+
+-Original-  almond%20extract:
+
+-Original-  salt:
+celery%20salt 1.0
+oat%20flour 1.0
+garlic%20salt 1.0
+
+-Original-  powdered%20sugar:
+
