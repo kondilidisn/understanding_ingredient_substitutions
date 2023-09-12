@@ -1,7 +1,7 @@
 from Agent import Agent
 import os
 from rdflib import Graph, Namespace, URIRef
-from typing import Tuple, Optional, Union
+from typing import Tuple, Optional, Union, List
 import argparse
 from collections import defaultdict
 
@@ -74,6 +74,25 @@ def get_demo_recipe_ingredients() -> set[URIRef]:
 
     return demo_recipe_ingredients
 
+def get_top_k_ingredient_substitutions_for_recipe_and_ingredient(agent:Agent, recipe_ingredients:set[URIRef], original_ingredient:URIRef, k:int=10) -> list[tuple[URIRef, float]]:
+    substitution_recommendations: list[tuple[URIRef, float]] = agent.infer_on_ingredient_substitution_query(
+    recipe_ingredients=recipe_ingredients, original_ingredient=original_ingredient, return_scores=True)
+
+    # if k is set to -1, it signals to only return justified recommendations (the ones that have positive experience-based scores)
+    if k != -1:
+        justified_substitutions: list[Tuple[URIRef, float]] = []
+        for ingredient_iri, score in substitution_recommendations:
+            if score <= 0:
+                break
+            justified_substitutions.append((ingredient_iri, score))
+
+        substitution_recommendations = justified_substitutions
+
+    else:
+        substitution_recommendations = substitution_recommendations[:k]
+
+    return substitution_recommendations
+
 def print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent:Agent, recipe_ingredients:set[URIRef], k:int=10, show_scores:bool=False) -> dict[URIRef, list[tuple[URIRef, float]]]:
 
     print("The recipe consists of the following ingredients:")
@@ -86,9 +105,8 @@ def print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent:Agent, re
 
     for original_ingredient in recipe_ingredients:
         print("-Original- ", remove_ingredient_prefix(original_ingredient) + ":")
-
-        all_ingredient_substitution_suggestions_and_scores[original_ingredient] = agent.infer_on_ingredient_substitution_query(
-            recipe_ingredients=recipe_ingredients, original_ingredient=original_ingredient, return_scores=True)[:k]
+        all_ingredient_substitution_suggestions_and_scores[original_ingredient] = \
+            get_top_k_ingredient_substitutions_for_recipe_and_ingredient(agent, recipe_ingredients, original_ingredient, k=k)
 
         for suggested_substitution, score in all_ingredient_substitution_suggestions_and_scores[original_ingredient]:
             ingredient_name = remove_ingredient_prefix(suggested_substitution)
@@ -131,25 +149,9 @@ def justify_specific_ingredient_substitution(agent:Agent, recipe_ingredients: se
                       new_ingredient_property])
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--steps", default="100", type=str, help='["100", "1000", "complete"]')
-    parser.add_argument("--learning", default="HC", type=str, help='["HC", "LT+Freq"]')
-    parser.add_argument("--AL", default="AL", type=str, help='["AL", "PL"]')
-    parser.add_argument("--demo_dir", default="Demo", type=str)
-    parser.add_argument("--k", default=10, type=int, help='Number of substitutions to suggest per ingredient')
-    parser.add_argument("--show_scores", action="store_true", help="Show recommendation scores")
-
-    args = parser.parse_args()
-
-
-    demo_dir:str = args.demo_dir
-
-    # if args.learning == "HC" and args.AL == "AL" and args.steps
+def load_trained_agent(args) -> Agent:
 
     exp_paths = defaultdict(lambda: defaultdict(lambda: defaultdict(str)))
-
 
     # 100 SAMPLES
     # LT+Freq - PL
@@ -193,32 +195,97 @@ if __name__ == '__main__':
     agent_filepath = os.path.join(os.path.join(args.demo_dir, exp_paths[args.learning][args.AL][args.steps]), "agent_state_final.pkl")
 
     # load trained agent
-    agent = Agent(load_ingredient_properties=False)
-    agent.load_agent(agent_filepath)
+    trained_agent: Agent = Agent(load_ingredient_properties=False)
+    trained_agent.load_agent(agent_filepath)
 
-    demo_recipe_ingredients = get_demo_recipe_ingredients()
+    return trained_agent
+
+# def get_top_ingredient_substitutions_for_recipe_and_ingredient(agent:Agent, recipe_ingredients:set[URIRef], original_ingredient:URIRef, k:int=-1) -> list[URIRef]:
+#
+#     substitution_recommendations: list[tuple[URIRef, float]] = agent.infer_on_ingredient_substitution_query(
+#     recipe_ingredients=recipe_ingredients, original_ingredient=original_ingredient, return_scores=True)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--steps", default="100", type=str, help='["100", "1000", "complete"]')
+    parser.add_argument("--learning", default="HC", type=str, help='["HC", "LT+Freq"]')
+    parser.add_argument("--AL", default="AL", type=str, help='["AL", "PL"]')
+    parser.add_argument("--demo_dir", default="Demo", type=str)
+    parser.add_argument("--k", default=-1, type=int, help='Number of substitutions to suggest per ingredient')
+    parser.add_argument("--show_scores", action="store_true", help="Show recommendation scores")
+
+    args = parser.parse_args()
+
+    agent = load_trained_agent(args)
+
+
+    demo_recipe_ingredients: set[URIRef] = get_demo_recipe_ingredients()
+
+    ingredient_to_replace: URIRef = URIRef("http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract")
+
+    ingredient_sub_recommendations:list[tuple[URIRef, float]] = get_top_k_ingredient_substitutions_for_recipe_and_ingredient(agent, demo_recipe_ingredients,
+                                                                                                                             original_ingredient=ingredient_to_replace, k=args.k)
+
+    print(f"{len(ingredient_sub_recommendations)} ingredients can be used as substitutes.")
+
+    # top equally good substitutions
+    top_subs:list[URIRef] = []
+    top_score = ingredient_sub_recommendations[0][1]
+    for ingredient_iri, score in ingredient_sub_recommendations:
+        if score < top_score:
+            break
+        top_subs.append(ingredient_iri)
+
+
+    print(f"There are {len(top_subs)}, best matches, including:")
+    print("Among these, only 'chopped coconut', and 'coconut oil', are currently available in our kitchen.")
+    print("These substitutions are suggested because 2 recorded experiences suggests that 'coconut food product' is a good match with recipes that also contain 'vanilla bean food product'")
 
 
 
-    # infer ingredient substitution recommendations
-    # print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent, demo_recipe_ingredients, k=args.k, show_scores=args.show_scores)
-
-    # justify specific ingredient substitutions
-# python3 demo_script.py > Demo/ing2ing=100__ingP2ingP=10__recP2ingP=1__ing_perception=foodOn_foodOn_one_hop__introspection_epsilon_greedy_0.1_ing_10.0_ing_prop_1.0__max_steps_100/justified_ingredient_recommendations.txt
-    original_ingredient_iri = URIRef("http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract")
-    new_ingredient_short_iris = [URIRef("http://idea.rpi.edu/heals/kb/ingredientname/coconut%20oil"), URIRef("http://idea.rpi.edu/heals/kb/ingredientname/chopped%20coconut")]
-
-    foodkg_graphdb_interface = FoodKGGraphDBInterface(load_ingredient_indexes_from_files=True)
-
-    # foodkg_graphdb_interface.get_rdfs_label_of_iri(URIRef("http://purl.obolibrary.org/obo/FOODON_03414810"))
-
-
-    for new_ingredient_short_iri in new_ingredient_short_iris:
-        justify_specific_ingredient_substitution(agent, demo_recipe_ingredients, original_ingredient_iri, new_ingredient_short_iri, foodkg_graphdb_interface=foodkg_graphdb_interface)
-        print()
 
 
 
+    # # infer ingredient substitution recommendations
+            # print_top_k_suggested_substitutions_per_ingredient_of_recipe(agent, demo_recipe_ingredients, k=args.k, show_scores=args.show_scores)
+
+
+#
+#     # justify specific ingredient substitutions
+# # python3 demo_script.py > Demo/ing2ing=100__ingP2ingP=10__recP2ingP=1__ing_perception=foodOn_foodOn_one_hop__introspection_epsilon_greedy_0.1_ing_10.0_ing_prop_1.0__max_steps_100/justified_ingredient_recommendations.txt
+#     original_ingredient_iri = URIRef("http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract")
+#  ------------  among the top 75 recommendations with the same top score (60)
+#     new_ingredient_short_iris = [URIRef("http://idea.rpi.edu/heals/kb/ingredientname/coconut%20oil"), URIRef("http://idea.rpi.edu/heals/kb/ingredientname/chopped%20coconut")]
+#
+#     foodkg_graphdb_interface = FoodKGGraphDBInterface(load_ingredient_indexes_from_files=True)
+#
+#     # foodkg_graphdb_interface.get_rdfs_label_of_iri(URIRef("http://purl.obolibrary.org/obo/FOODON_03414810"))
+#
+#
+#     for new_ingredient_short_iri in new_ingredient_short_iris:
+#         justify_specific_ingredient_substitution(agent, demo_recipe_ingredients, original_ingredient_iri, new_ingredient_short_iri, foodkg_graphdb_interface=foodkg_graphdb_interface)
+#         print()
+#
+# ---------   Justifications on replacing: http://idea.rpi.edu/heals/kb/ingredientname/almond%20extract
+#  with: http://idea.rpi.edu/heals/kb/ingredientname/coconut%20oil (Score 60, highest ranked together with other 75 ?)
+#  with: http://idea.rpi.edu/heals/kb/ingredientname/chopped%20coconut (Score 60, highest ranked together with other 75 ?)
+# -- Related Ingredient to Ingredient Observations
+# {}
+#
+# -- Related Ingredient Property to Ingredient Property Observations
+#
+# -- Related Recipe Property to Ingredient Property Observations
+
+# vanilla sugar ->
+# 	 plant lipid food product 2
+# 	 coconut food product 2
+# 	 coconut oil 2
+# vanilla bean food product ->
+# 	 coconut food product 2
+# 	 coconut oil 2
+
+    # "We are replacing 'almond extract', with 'coconut oil', because of experience suggests that 'coconut food product' is a good match with recipes that also contain 'vanilla bean food product'"
 #
 # python3 demo_script.py --k 10 --learning LT+Freq --AL PL --steps 100 --show_scores  > Demo/ing2ing=1__No_Ingredient_Perception_Used__introspection_random__max_steps_100/ingredient_recommendations.txt
 # python3 demo_script.py --k 10 --learning LT+Freq --AL AL --steps 100 --show_scores  > Demo/ing2ing=1__ing_perception=foodOn_foodOn_one_hop__introspection_epsilon_greedy_0.1_ing_10.0_ing_prop_1.0__max_steps_100/ingredient_recommendations.txt
