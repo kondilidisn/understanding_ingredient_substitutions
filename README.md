@@ -1,6 +1,6 @@
 # Exploring_FoodKG_1MRecipes (WIP)
 
-This repository contains the code surrounding Understadning Ingredient Substitution Experiments, in the context of an agent interacting with a human chef in order to learn how to perform ingredient substitution.
+This repository contains the code surrounding Understanding Ingredient Substitution Experiments, in the context of an agent interacting with a human chef in order to learn how to perform ingredient substitution.
 
 The code supports the exploration and use of the Recipe1M dataset and Recipe1Msubs benchmark.
 Additionally, it utilizes a GraphDB interface to query the FoodKG knowledge graph.
